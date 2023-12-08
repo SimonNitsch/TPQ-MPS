@@ -163,7 +163,9 @@ std::vector<std::vector<double>> Calculate_Energies(int TimeSteps, int Evols, st
         std::cout << "Hello\n";
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
         std::cout << E << "\n";
-        E_vec.push_back(std::real(E));
+        double Ereal = std::real(E);
+        std::cout << Ereal << "\n";
+        E_vec.push_back(Ereal);
         std::cout << "b";
 
         for (int j = 0; j != TimeSteps; j++){
