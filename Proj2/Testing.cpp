@@ -6,6 +6,11 @@
 #include <complex>
 #include <ios>
 #include <type_traits>
+#include <cmath>
+#include <cstdio>
+#include <filesystem>
+#include <string>
+#include <algorithm>
 
 
 std::array<itensor::MPO,2> Create_Heisenberg_Model_1D(int N, double J, double beta, itensor::SpinHalf& sites){
@@ -29,7 +34,7 @@ std::array<itensor::MPO,2> Create_Heisenberg_Model_1D(int N, double J, double be
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
 
-std::array<itensor::MPO,2> Create_Heisenberg_Model_1D(int N, double J, double beta, T& sites, int auxiliaries){
+std::array<itensor::MPO,3> Create_Heisenberg_Model_1D(int N, double J, double beta, T& sites, int auxiliaries){
     sites = T(N+2*auxiliaries,{"ConserveQNs=",false});
     auto ampo = itensor::AutoMPO(sites);
 
@@ -39,11 +44,9 @@ std::array<itensor::MPO,2> Create_Heisenberg_Model_1D(int N, double J, double be
         ampo += J*0.5,"S-",i,"S+",i+1;
     }
     auto H = itensor::toMPO(ampo);
-    auto U = itensor::toExpH(ampo,beta/2);
-
-    std::array<itensor::MPO,2> output;
-    output[0] = H;
-    output[1] = U;
+    auto U1 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
+    auto U2 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
+    std::array<itensor::MPO,3> output = {H,U1,U2};
     return output;
 }
 
@@ -70,7 +73,7 @@ std::array<int,3> get_neighbour_data(int N, int M, int pos){
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
 
-std::array<itensor::MPO,2> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double Kx, double Ky, double Kz, double beta, T& sites, int auxiliaries){
+std::array<itensor::MPO,3> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double Kx, double Ky, double Kz, double beta, T& sites, int auxiliaries){
     sites = T(N*M+2*auxiliaries, {"ConserveQNs=",false});
     auto ampo = itensor::AutoMPO(sites);
 
@@ -85,25 +88,21 @@ std::array<itensor::MPO,2> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double
     for (int& i : full_points){
         std::array<int,3> neighbours = get_neighbour_data(N,M,i);
         if (neighbours[0] != 0){
-            ampo += 2*Kx,"Sx",i+auxiliaries,"Sx",neighbours[0]+auxiliaries;
+            ampo += Kx,"Sx",i+auxiliaries,"Sx",neighbours[0]+auxiliaries;
         }
         if (neighbours[1] != 0){
-            ampo += 2*Ky,"Sy",i+auxiliaries,"Sy",neighbours[1]+auxiliaries;
+            ampo += Ky,"Sy",i+auxiliaries,"Sy",neighbours[1]+auxiliaries;
         }
         if (neighbours[2] != 0){
-            ampo += 2*Kz,"Sz",i+auxiliaries,"Sz",neighbours[2]+auxiliaries;
+            ampo += Kz,"Sz",i+auxiliaries,"Sz",neighbours[2]+auxiliaries;
         }
     }
 
-    auto H = itensor::toMPO(ampo);
-    auto U = itensor::toExpH(ampo,beta/2);
-
     itensor::PrintData(ampo);
-
-
-    std::array<itensor::MPO,2> output;
-    output[0] = H;
-    output[1] = U;
+    auto H = itensor::toMPO(ampo);
+    auto U1 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
+    auto U2 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
+    std::array<itensor::MPO,3> output = {H,U1,U2};
     return output;
 
 }
@@ -111,7 +110,7 @@ std::array<itensor::MPO,2> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
 
-std::array<itensor::MPO,2> Create_Heisenberg_Model_2D(int N, int M, double J, double beta, T& sites, int auxiliaries){
+std::array<itensor::MPO,3> Create_Heisenberg_Model_2D(int N, int M, double J, double beta, T& sites, int auxiliaries){
     sites = T(N*M+2*auxiliaries,{"ConserveQNs=",false});
     auto ampo = itensor::AutoMPO(sites);
 
@@ -135,9 +134,9 @@ std::array<itensor::MPO,2> Create_Heisenberg_Model_2D(int N, int M, double J, do
     
     itensor::PrintData(ampo);
     auto H = itensor::toMPO(ampo);
-    auto U = itensor::toExpH(ampo,beta*0.5);
-    std::array<itensor::MPO,2> output = {H,U};
-    std::cout << "Finished Creating Heisenberg Model\n"; 
+    auto U1 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
+    auto U2 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
+    std::array<itensor::MPO,3> output = {H,U1,U2};
     return output;
 
 
@@ -147,9 +146,10 @@ std::array<itensor::MPO,2> Create_Heisenberg_Model_2D(int N, int M, double J, do
 
 
 
-std::vector<std::vector<double>> Calculate_Energies(int TimeSteps, int Evols, std::array<itensor::MPO,2>& H_U, itensor::SiteSet& sites){
+std::vector<std::vector<double>> Calculate_Energies(int TimeSteps, int Evols, std::array<itensor::MPO,3>& H_U, itensor::SiteSet& sites){
     auto H = H_U[0];
-    auto U = H_U[1];
+    auto U1 = H_U[1];
+    auto U2 = H_U[2];
     
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
@@ -157,30 +157,32 @@ std::vector<std::vector<double>> Calculate_Energies(int TimeSteps, int Evols, st
     E_vec.reserve(TimeSteps+1);
     auto IState = itensor::InitState(sites);
 
+
     for (int i = 0; i != Evols; i++){
         auto t1 = std::chrono::system_clock::now();
         auto psi = itensor::randomMPS(IState);
-        std::cout << "Hello\n";
+        //std::cout << "Hello\n";
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
-        std::cout << E << "\n";
-        double Ereal = std::real(E);
-        std::cout << Ereal << "\n";
-        E_vec.push_back(Ereal);
-        std::cout << "b";
+        //std::cout << E << "\n";
+        //std::cout << Ereal << "\n";
+        E_vec.push_back(std::real(E));
+        //std::cout << "b" << std::flush;
 
         for (int j = 0; j != TimeSteps; j++){
-            std::cout << "a";
-            psi = itensor::applyMPO(U,psi,{"Method=","DensityMatrix","MaxDim=",512,"Cutoff=",1e-8});
+            //std::cout << "a";
+            psi = itensor::applyMPO(U1,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-8});
+            psi = itensor::applyMPO(U2,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-8});
             std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::innerC(psi,psi);
             E_vec.push_back(std::real(E));
-            std::cout << "a";
-            std::cout << j;
+            //std::cout << "a";
+            //std::cout << j << std::flush;
             //std::cout << E << "\n";
         }
         Energies.push_back(E_vec);
+        E_vec.clear();
         auto t2 = std::chrono::system_clock::now();
         auto time = std::chrono::duration<double>(t2-t1);
-        std::cout << "Finished Evolution Number " << (i+1) << ", Time Needed: " << time.count() << " seconds\n";
+        std::cout << "Finished Evolution Number " << (i+1) << ", Time Needed: " << time.count() << " seconds\n" << std::flush;
 
     }
 
@@ -189,21 +191,43 @@ std::vector<std::vector<double>> Calculate_Energies(int TimeSteps, int Evols, st
 }
 
 
-std::vector<double> Mean(std::vector<std::vector<double>>& M){
-    std::vector<double> vec;
+std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M){
     int M0 = M[0].size();
     int M1 = M.size();
+    std::vector<std::array<double,2>> vec;
     vec.reserve(M0);
     
     for (int i = 0; i != M0; i++){
         double v = 0;
+        double v2 = 0;
         for (int j = 0; j != M1; j++){
             v += M[j][i];
+            v2 += M[j][i] * M[j][i];
         }
-        vec.push_back(v/M1);
-
+        double mean = v/static_cast<double>(M1);
+        double std = std::sqrt(v2/M1 - mean*mean);
+        std::array<double,2> v = {mean,std};
+        vec.emplace_back(v);
     }
+    
     return vec;
+
+}
+
+
+template<std::size_t n, typename T>
+void Save_Data(std::string& filename, std::vector<std::array<T,n>>& vec, int data_points=100){
+    std::ofstream file(filename,std::ios::binary);
+    int length = std::min(vec.size(),data_points);
+
+    for (int i = 0; i != length; i++){
+        int next_index = (i*vec.size())/length;
+        std::array<T,n> point = vec[next_index];
+        file.write(reinterpret_cast<const char*>(point.data()),point.size()*sizeof(T));
+    }
+    file.close();
+
+    std::cout << "Data saved as: " << filename << "\n" << std::flush;
 
 }
 
@@ -211,30 +235,30 @@ std::vector<double> Mean(std::vector<std::vector<double>>& M){
 
 
 int main(){
-    std::ios_base::sync_with_stdio(true);
+    std::ios_base::sync_with_stdio(false);
     auto start = std::chrono::system_clock::now();
     
     int N = 6;
     int M = 8;
     double J = 1.;
-    double beta = 0.025;
-    double K = 1./3.;
+    double beta = 0.05;
+    double K = 1.;
 
-    int TimeSteps = 400;
-    int Evols = 25;
+    int TimeSteps = 300;
+    int Evols = 1;
     
     itensor::SpinHalf sites;
-    auto H_U = Create_Heisenberg_Model_2D(N,M,J,beta,sites,5);
+    auto H_U = Create_Kitaev_Honeycomb_Model_2D(N,M,K,K,K,beta,sites,7);
 
     std::vector<std::vector<double>> Energies = Calculate_Energies(TimeSteps,Evols,H_U,sites);
-    std::vector<double> means = Mean(Energies);
+    std::vector<std::array<double,2>> means = Mean(Energies);
 
     auto end = std::chrono::system_clock::now();
     auto total_time = std::chrono::duration<double>(end-start);
     std::cout << "Time needed for the whole calculation: " << total_time.count() << " seconds\n";
 
-    for (auto& m : means){
-        std::cout << m/((N-1)*M+(N/2+1)*(M-1)) << "\n";
+    for (auto& i : means){
+        std::cout << i[0] << " " << i[1] << "\n";
     }
 
 
