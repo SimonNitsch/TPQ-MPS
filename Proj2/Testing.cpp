@@ -111,9 +111,35 @@ std::array<itensor::MPO,2> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
 
-std::array<itensor::MPO,2> Create_Heisenberg_Model_2D(int N, int M, double Jx, double Jy, double beta, T& sites, int auxiliaries){
+std::array<itensor::MPO,2> Create_Heisenberg_Model_2D(int N, int M, double J, double beta, T& sites, int auxiliaries){
     sites = T(N*M+2*auxiliaries,{"ConserveQNs=",false});
     auto ampo = itensor::AutoMPO(sites);
+
+    for (int i = 1; i != N; i++){
+        for (int j = 0; j != M; j++){
+            int n = auxiliaries+j*N+i;
+            ampo += J,"Sz",n,"Sz",n+1;
+            ampo += J*0.5,"S+",n,"S-",n+1;
+            ampo += J*0.5,"S-",n,"S+",n+1;
+        }
+    }
+
+    for (int i = 1; i <= N; i++){
+        for (int j = 0; j != (M-1); j++){
+            int n = auxiliaries+j*N+i;
+            ampo += J,"Sz",n,"Sz",n+N;
+            ampo += J*0.5,"S+",n,"S-",n+N;
+            ampo += J*0.5,"S-",n,"S+",n+N;
+        }
+    }
+    
+    itensor::PrintData(ampo);
+    auto H = itensor::toMPO(ampo);
+    auto U = itensor::toExpH(ampo,beta*0.5);
+    std::array<itensor::MPO,2> output = {H,U};
+    std::cout << "Finished Creating Heisenberg Model\n"; 
+    return output;
+
 
 }
 
@@ -134,14 +160,20 @@ std::vector<std::vector<double>> Calculate_Energies(int TimeSteps, int Evols, st
     for (int i = 0; i != Evols; i++){
         auto t1 = std::chrono::system_clock::now();
         auto psi = itensor::randomMPS(IState);
+        std::cout << "Hello\n";
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
+        std::cout << E << "\n";
         E_vec.push_back(std::real(E));
+        std::cout << "b";
 
         for (int j = 0; j != TimeSteps; j++){
+            std::cout << "a";
             psi = itensor::applyMPO(U,psi,{"Method=","DensityMatrix","MaxDim=",512,"Cutoff=",1e-8});
             std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::innerC(psi,psi);
             E_vec.push_back(std::real(E));
-            std::cout << E << "\n";
+            std::cout << "a";
+            std::cout << j;
+            //std::cout << E << "\n";
         }
         Energies.push_back(E_vec);
         auto t2 = std::chrono::system_clock::now();
@@ -183,14 +215,14 @@ int main(){
     int N = 6;
     int M = 8;
     double J = 1.;
-    double beta = 0.01;
+    double beta = 0.025;
     double K = 1./3.;
 
-    int TimeSteps = 1000;
+    int TimeSteps = 400;
     int Evols = 25;
     
     itensor::SpinHalf sites;
-    auto H_U = Create_Kitaev_Honeycomb_Model_2D(N,M,K,K,K,beta,sites,5);
+    auto H_U = Create_Heisenberg_Model_2D(N,M,J,beta,sites,5);
 
     std::vector<std::vector<double>> Energies = Calculate_Energies(TimeSteps,Evols,H_U,sites);
     std::vector<double> means = Mean(Energies);
