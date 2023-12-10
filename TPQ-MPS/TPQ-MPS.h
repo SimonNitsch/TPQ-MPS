@@ -14,6 +14,7 @@
 #include <filesystem>
 #include <string>
 #include <algorithm>
+#include <cstdlib>
 
 /*
 std::array<itensor::MPO*,2> Create_Heisenberg_Model_1D(int N, double J, double beta, itensor::SpinHalf& sites){
@@ -191,9 +192,9 @@ std::vector<std::array<double,2>> Calculate_Energies(int TimeSteps, int Evols, s
 
         for (int j = 0; j != TimeSteps; j++){
             //std::cout << "a";
-            psi = itensor::applyMPO(U1,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-8});
-            psi = itensor::applyMPO(U2,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-8});
-            std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::innerC(psi,psi);
+            psi = itensor::applyMPO(U1,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-6});
+            psi = itensor::applyMPO(U2,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-6,"Normalize=",true});
+            std::complex<double> E = itensor::innerC(psi,H,psi);
             E_vec.push_back(std::real(E));
             //std::cout << j << std::flush;
             
@@ -202,7 +203,7 @@ std::vector<std::array<double,2>> Calculate_Energies(int TimeSteps, int Evols, s
         E_vec.clear();
         auto t2 = std::chrono::system_clock::now();
         auto time = std::chrono::duration<double>(t2-t1);
-        std::cout << "Finished Evolution Number " << (i+1) << ", Time Needed: " << time.count() << " seconds\n" << std::flush;
+        std::cout << "Finished Evolution Number " << (i+1) << "/" << Evols << ", Time Needed: " << time.count() << " seconds\n" << std::flush;
 
     }
 
@@ -216,7 +217,8 @@ std::vector<std::array<double,2>> Calculate_Energies(int TimeSteps, int Evols, s
 template<std::size_t n, typename T>
 void Save_Data(std::string& filename, std::vector<std::array<T,n>>& vec, int data_points=100){
     std::ofstream file(filename,std::ios::binary);
-    int length = std::min(vec.size(),data_points);
+    int vecsize = vec.size();
+    int length = std::min(vecsize,data_points);
 
     for (int i = 0; i != length; i++){
         int next_index = (i*vec.size())/length;
@@ -227,6 +229,18 @@ void Save_Data(std::string& filename, std::vector<std::array<T,n>>& vec, int dat
 
     std::cout << "Data saved as: " << filename << "\n" << std::flush;
 
+}
+
+
+void Plot(std::string filename, double x_max){
+    if (!(std::filesystem::exists(filename)))
+    {
+        std::cerr << "The specified file doesn't exist: " << filename << "\n" << std::flush;   
+    }
+    char x = static_cast<char>(x_max);
+    std::string command = "python3 plot.py " + filename + " " + x;
+    std::system(command.c_str());
+    
 }
 
 
