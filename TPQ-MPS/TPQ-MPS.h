@@ -136,7 +136,6 @@ std::array<itensor::MPO,3> Create_Heisenberg_Model_2D(int N, int M, double J, do
         }
     }
     
-    itensor::PrintData(ampo);
     auto H = itensor::toMPO(ampo);
     auto U1 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
     auto U2 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
