@@ -15,6 +15,7 @@
 #include <string>
 #include <algorithm>
 #include <cstdlib>
+#include "TDVP/tdvp.h"
 
 /*
 std::array<itensor::MPO*,2> Create_Heisenberg_Model_1D(int N, double J, double beta, itensor::SpinHalf& sites){
@@ -102,7 +103,6 @@ std::array<itensor::MPO,3> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double
         }
     }
 
-    itensor::PrintData(ampo);
     auto H = itensor::toMPO(ampo);
     auto U1 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
     auto U2 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
@@ -171,30 +171,39 @@ std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M){
 
 
 
-std::vector<std::array<double,2>> Calculate_Energies(int TimeSteps, int Evols, std::array<itensor::MPO,3>& H_U, itensor::SiteSet& sites){
+std::vector<std::array<double,2>> Calculate_Energies_WI(int TimeSteps, int Evols, std::array<itensor::MPO,3>& H_U, itensor::SiteSet& sites, int init_rand_sites=32, int data_points=100){
     auto H = H_U[0];
     auto U1 = H_U[1];
     auto U2 = H_U[2];
-    
+
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
+
+    int data = std::min(data_points,TimeSteps);
     std::vector<double> E_vec;
-    E_vec.reserve(TimeSteps+1);
+    E_vec.reserve(data);
     //auto IState = itensor::InitState(sites);
 
 
     for (int i = 0; i != Evols; i++){
         auto t1 = std::chrono::system_clock::now();
-        auto psi = itensor::randomMPS(sites,32);
+        auto psi = itensor::randomMPS(sites,init_rand_sites);
+
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
+
+        int count = 1;
 
         for (int j = 0; j != TimeSteps; j++){
             //std::cout << "a";
             psi = itensor::applyMPO(U1,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-6});
             psi = itensor::applyMPO(U2,psi,{"Method=","DensityMatrix","MaxDim=",256,"Cutoff=",1e-6,"Normalize=",true});
-            std::complex<double> E = itensor::innerC(psi,H,psi);
-            E_vec.push_back(std::real(E));
+
+            if (j*data >= count*TimeSteps){
+                std::complex<double> E = itensor::innerC(psi,H,psi);
+                E_vec.push_back(std::real(E));
+                count += 1;
+            }
             //std::cout << j << std::flush;
             
         }
@@ -213,11 +222,32 @@ std::vector<std::array<double,2>> Calculate_Energies(int TimeSteps, int Evols, s
 
 
 
+std::vector<std::vector<double>> Calculate_Energies_TDVP(int TimeSteps, int Evols, itensor::MPO& H, itensor::SiteSet& sites, int data_points=100){
+    std::vector<std::vector<double>> Energies;
+    Energies.reserve(Evols);
+    std::vector<double> E_vec;
+    E_vec.reserve(data_points);
+
+    
+
+
+}
+
+
+
+
+
+
+
+
 template<std::size_t n, typename T>
-void Save_Data(std::string& filename, std::vector<std::array<T,n>>& vec, int data_points=100){
+void Save_Data(std::string& filename, std::vector<std::array<T,n>>& vec, int data_points=0){
     std::ofstream file(filename,std::ios::binary);
-    int vecsize = vec.size();
-    int length = std::min(vecsize,data_points);
+    int length = vec.size();
+
+    if (data_points!=0){
+        length = std::min(length,data_points);        
+    }
 
     for (int i = 0; i != length; i++){
         int next_index = (i*vec.size())/length;
