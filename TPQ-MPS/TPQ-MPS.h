@@ -270,7 +270,14 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evo
 
 
 
+double DMRG(itensor::MPO& H, itensor::SiteSet& sites, int Sweeps=10){
+    auto psi0 = itensor::randomMPS(sites,1);
 
+    auto [energy, psi] = itensor::dmrg(H,psi0,Sweeps,{"Quiet",true});
+    double e = energy;
+    return e;
+
+}
 
 
 
