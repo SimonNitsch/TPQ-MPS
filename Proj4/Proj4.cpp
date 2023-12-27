@@ -22,10 +22,11 @@ int main(){
 
     int TimeSteps = 200;
     int Evols = 20;
+    int random_states = 1;
 
     auto H_U = TPQ_MPS::Create_Heisenberg_Model_2D(N,M,J,beta,sites,auxiliaries);
     itensor::PrintData(H_U[0]);
-    std::vector<std::array<double,2>> Energies = TPQ_MPS::Calculate_Energies_WI(TimeSteps,Evols,H_U,sites,3);
+    std::vector<std::array<double,2>> Energies = TPQ_MPS::Calculate_Energies_WI(TimeSteps,Evols,H_U,sites,random_states);
     TPQ_MPS::Save_Data(filename,Energies);
 
     for (auto& e : Energies){

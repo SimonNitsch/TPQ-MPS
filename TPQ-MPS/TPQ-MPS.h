@@ -11,11 +11,12 @@
 #include <type_traits>
 #include <cmath>
 #include <cstdio>
-#include <filesystem>
+//#include <filesystem>
 #include <string>
 #include <algorithm>
 #include <cstdlib>
 #include "TDVP/tdvp.h"
+#include <fstream>
 
 /*
 std::array<itensor::MPO*,2> Create_Heisenberg_Model_1D(int N, double J, double beta, itensor::SpinHalf& sites){
@@ -202,9 +203,8 @@ std::vector<std::array<double,2>> Calculate_Energies_WI(int TimeSteps, int Evols
             if (j*data >= count*TimeSteps){
                 std::complex<double> E = itensor::innerC(psi,H,psi);
                 E_vec.push_back(std::real(E));
-                count += 1;
+                count++;
             }
-            //std::cout << j << std::flush;
             
         }
         Energies.push_back(E_vec);
@@ -222,12 +222,47 @@ std::vector<std::array<double,2>> Calculate_Energies_WI(int TimeSteps, int Evols
 
 
 
-std::vector<std::vector<double>> Calculate_Energies_TDVP(int TimeSteps, int Evols, itensor::MPO& H, itensor::SiteSet& sites, int data_points=100){
+std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evols, double beta, itensor::MPO& H, itensor::SiteSet& sites, int init_rand_sites=32, int Sweeps=5, int data_points=100){
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
-    std::vector<double> E_vec;
-    E_vec.reserve(data_points);
 
+    int data = std::min(data_points,TimeSteps);
+    std::vector<double> E_vec;
+    E_vec.reserve(data);
+
+    itensor::Cplx t = beta * itensor::Cplx_1;
+
+    for (int i = 0; i != Evols; i++){
+        auto t1 = std::chrono::system_clock::now();
+        auto psi = itensor::randomMPS(sites,init_rand_sites);
+
+        std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
+        E_vec.push_back(std::real(E));
+
+        int count = 1;
+
+        for (int j = 0; j != TimeSteps; j++){
+            double E = itensor::tdvp(psi,H,t,Sweeps,{"Truncate",true,
+                                                    "DoNormalize",true,
+                                                    "Quiet",true,
+                                                    "NumCenter",1,
+                                                    "ErrGoal",1E-7});
+            
+            if (j*data >= count*TimeSteps){
+                E_vec.push_back(E);
+                count++;
+            }
+
+        }
+        Energies.push_back(E_vec);
+        E_vec.clear();
+        auto t2 = std::chrono::system_clock::now();
+        auto time = std::chrono::duration<double>(t2-t1);
+        std::cout << "Finished Evolution Number " << (i+1) << "/" << Evols << ", Time Needed: " << time.count() << " seconds\n" << std::flush;
+        
+    }
+    std::vector<std::array<double,2>> Mean_Energies = Mean(Energies);
+    return Mean_Energies;
     
 
 
@@ -240,8 +275,12 @@ std::vector<std::vector<double>> Calculate_Energies_TDVP(int TimeSteps, int Evol
 
 
 
+
+
+
+
 template<std::size_t n, typename T>
-void Save_Data(std::string& filename, std::vector<std::array<T,n>>& vec, int data_points=0){
+void Save_Data_bin(std::string& filename, std::vector<std::array<T,n>>& vec, int data_points=0){
     std::ofstream file(filename,std::ios::binary);
     int length = vec.size();
 
@@ -261,16 +300,23 @@ void Save_Data(std::string& filename, std::vector<std::array<T,n>>& vec, int dat
 }
 
 
-void Plot(std::string filename, double x_max){
-    if (!(std::filesystem::exists(filename)))
-    {
-        std::cerr << "The specified file doesn't exist: " << filename << "\n" << std::flush;   
+template<std::size_t n, typename T>
+void Save_Data_txt(std::string& filename, std::vector<std::array<T,n>>& vec){
+    std::string ending = ".txt";
+    std::string full_file = filename + ending;
+    std::ofstream file(full_file);
+
+    for (auto& varr : vec){
+        for (auto& v : varr){
+            file << std::to_string(v) <<  ", ";
+        }
+        file << "\n";
+
     }
-    char x = static_cast<char>(x_max);
-    std::string command = "python3 plot.py " + filename + " " + x;
-    std::system(command.c_str());
-    
+    file.close();
+    std::cout << "Data saved as: " << full_file << "\n" << std::flush;
 }
+
 
 
 
