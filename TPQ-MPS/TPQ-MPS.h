@@ -80,6 +80,18 @@ std::array<int,3> get_neighbour_data(int N, int M, int pos){
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
 
 std::array<itensor::MPO,3> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double Kx, double Ky, double Kz, double beta, T& sites, int auxiliaries){
+        
+    auto H = Create_Kitaev_Honeycomb_Model_2D(N,M,Kx,Ky,Kz,sites,auxiliaries);
+    auto U1 = itensor::expH(H,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
+    auto U2 = itensor::expH(H,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
+    std::array<itensor::MPO,3> output = {H,U1,U2};
+    return output;
+
+}
+
+template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
+
+itensor::MPO Create_Kitaev_Honeycomb_Model_2D(int N, int M, double Kx, double Ky, double Kz, T& sites, int auxiliaries){
     sites = T(N*M+2*auxiliaries, {"ConserveQNs=",false});
     auto ampo = itensor::AutoMPO(sites);
 
@@ -105,12 +117,10 @@ std::array<itensor::MPO,3> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double
     }
 
     auto H = itensor::toMPO(ampo);
-    auto U1 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
-    auto U2 = itensor::toExpH(ampo,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
-    std::array<itensor::MPO,3> output = {H,U1,U2};
-    return output;
-
+    return H;
 }
+
+
 
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
@@ -222,15 +232,17 @@ std::vector<std::array<double,2>> Calculate_Energies_WI(int TimeSteps, int Evols
 
 
 
-std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evols, double beta, itensor::MPO& H, itensor::SiteSet& sites, int init_rand_sites=32, int Sweeps=5, int data_points=100){
+std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evols, double beta, itensor::MPO& H, itensor::SiteSet& sites, bool ExtendTemp=true, int init_rand_sites=32, int Sweeps=5, int data_points=100){
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
 
     int data = std::min(data_points,TimeSteps);
     std::vector<double> E_vec;
-    E_vec.reserve(data);
+    E_vec.reserve(data + 1 + 2*static_cast<int>(ExtendTemp)*(data+1));
 
-    itensor::Cplx t = beta * itensor::Cplx_1;
+    itensor::Cplx t = -1 * beta * itensor::Cplx_1;
+    itensor::Cplx t2 = -5 * beta * itensor::Cplx_1;
+    itensor::Cplx t3 = -25 * beta * itensor::Cplx_1;
 
     for (int i = 0; i != Evols; i++){
         auto t1 = std::chrono::system_clock::now();
@@ -239,7 +251,7 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evo
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
 
-        int count = 1;
+        int count = 0;
 
         for (int j = 0; j != TimeSteps; j++){
             double E = itensor::tdvp(psi,H,t,Sweeps,{"Truncate",true,
@@ -251,15 +263,50 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evo
             if (j*data >= count*TimeSteps){
                 E_vec.push_back(E);
                 count++;
+                }
+            }
+
+
+
+        if (ExtendTemp){
+            count = 0;
+            E_vec.push_back(0);
+            for (int j = 0; j != TimeSteps; j++){
+                    double E = itensor::tdvp(psi,H,t2,Sweeps,{"Truncate",true,
+                                                            "DoNormalize",true,
+                                                            "Quiet",true,
+                                                            "NumCenter",1,
+                                                            "ErrGoal",1E-7});
+                    if (j*data >= count*TimeSteps){
+                        E_vec.push_back(E);
+                        count++;
+                    }
+
+            }
+            count = 0;
+            E_vec.push_back(0);
+            for (int j = 0; j != TimeSteps; j++){
+                    double E = itensor::tdvp(psi,H,t3,Sweeps,{"Truncate",true,
+                                                            "DoNormalize",true,
+                                                            "Quiet",true,
+                                                            "NumCenter",1,
+                                                            "ErrGoal",1E-7});
+                    if (j*data >= count*TimeSteps){
+                        E_vec.push_back(E);
+                        count++;
+                    }
+
             }
 
         }
+        
         Energies.push_back(E_vec);
         E_vec.clear();
         auto t2 = std::chrono::system_clock::now();
         auto time = std::chrono::duration<double>(t2-t1);
         std::cout << "Finished Evolution Number " << (i+1) << "/" << Evols << ", Time Needed: " << time.count() << " seconds\n" << std::flush;
-        
+
+
     }
     std::vector<std::array<double,2>> Mean_Energies = Mean(Energies);
     return Mean_Energies;
@@ -324,6 +371,15 @@ void Save_Data_txt(std::string& filename, std::vector<std::array<T,n>>& vec){
     std::cout << "Data saved as: " << full_file << "\n" << std::flush;
 }
 
+
+template<typename T>
+void Save_Data_txt(std::string& filename, T v){
+    std::vector<std::array<T,1>> vec;
+    std::array<T,1> v_array = {v};
+    vec.push_back(v_array);
+
+    Save_Data_txt(filename, vec);
+}
 
 
 

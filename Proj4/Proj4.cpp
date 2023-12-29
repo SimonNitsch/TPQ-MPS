@@ -27,7 +27,7 @@ int main(){
     auto H_U = TPQ_MPS::Create_Heisenberg_Model_2D(N,M,J,beta,sites,auxiliaries);
     itensor::PrintData(H_U[0]);
     std::vector<std::array<double,2>> Energies = TPQ_MPS::Calculate_Energies_WI(TimeSteps,Evols,H_U,sites,random_states);
-    TPQ_MPS::Save_Data(filename,Energies);
+    TPQ_MPS::Save_Data_txt(filename,Energies);
 
     for (auto& e : Energies){
         std::cout << e[0] << " " << e[1] << "\n";
