@@ -11,7 +11,7 @@
 #include <type_traits>
 #include <cmath>
 #include <cstdio>
-//#include <filesystem>
+#include "private.h"
 #include <string>
 #include <algorithm>
 #include <cstdlib>
@@ -58,23 +58,6 @@ std::array<itensor::MPO,3> Create_Heisenberg_Model_1D(int N, double J, double be
 
 
 
-std::array<int,3> get_neighbour_data(int N, int M, int pos){
-    int X = (pos-1) % N;
-    int Y = (pos-1) / N;
-    std::array<int,3> neighbours{};
-
-    if (X != (N-1)){
-        neighbours[0] = pos+1;
-    }
-    if (Y != 0){
-        neighbours[1] = pos-N+1;
-    }
-    if (pos != 1 && pos != M*N){
-        neighbours[2] = pos-1;
-    }
-    return neighbours;
-    
-}
 
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
@@ -90,35 +73,42 @@ std::array<itensor::MPO,3> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double
 }
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
-
-itensor::MPO Create_Kitaev_Honeycomb_Model_2D(int N, int M, double Kx, double Ky, double Kz, T& sites, int auxiliaries){
-    sites = T(N*M+2*auxiliaries, {"ConserveQNs=",false});
-    auto ampo = itensor::AutoMPO(sites);
-
-    std::vector<int> full_points;
-    full_points.reserve(((N+1)/2)*M);
-    for (int m = 0; m != M; m++){
-        for (int n = 1; n <= N; n+=2){
-            full_points.push_back(n+N*m);
-        }   
-    }
-
-    for (int& i : full_points){
-        std::array<int,3> neighbours = get_neighbour_data(N,M,i);
-        if (neighbours[0] != 0){
-            ampo += Kx,"Sx",i+auxiliaries,"Sx",neighbours[0]+auxiliaries;
-        }
-        if (neighbours[1] != 0){
-            ampo += Ky,"Sy",i+auxiliaries,"Sy",neighbours[1]+auxiliaries;
-        }
-        if (neighbours[2] != 0){
-            ampo += Kz,"Sz",i+auxiliaries,"Sz",neighbours[2]+auxiliaries;
-        }
-    }
-
+itensor::MPO Create_Kitaev_Honeycomb_Model_2D(int N, int M, std::array<double,3>& K, T& sites, int auxiliaries){
+    auto ampo = priv::kitaev_honeycomb_2D(N,M,K,sites,auxiliaries);
     auto H = itensor::toMPO(ampo);
     return H;
 }
+
+
+template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
+itensor::MPO Create_Kitaev_Honeycomb_Model_2D(int N, int M, std::array<double,3>& K, std::array<double,3>& h, T& sites, int auxiliaries){
+    auto ampo = priv::kitaev_honeycomb_2D(N,M,K,sites,auxiliaries);
+    int length = itensor::length(sites);
+    priv::add_magnetic_field(ampo,h,length,auxiliaries);
+    auto H = itensor::toMPO(ampo);
+    return H;
+}
+
+
+template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet,T>::value>>
+itensor::MPO Create_Kitaev_Triangular_Model_2D(int N, int M, std::array<double,3>& K, T& sites, int auxiliaries){
+    auto ampo = priv::kitaev_tri_2d(N,M,K,sites,auxiliaries);
+    auto H = itensor::toMPO(ampo);
+    return H;
+}
+
+
+template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
+itensor::MPO Create_Kitaev_Triangular_Model_2D(int N, int M, std::array<double,3>& K, std::array<double,3>& h, T& sites, int auxiliaries){
+    auto ampo = priv::kitaev_tri_2d(N,M,K,sites,auxiliaries);
+    int length = itensor::length(sites);
+    priv::add_magnetic_field(ampo,h,length,auxiliaries);
+    auto H = itensor::toMPO(ampo);
+    return H;
+}
+
+
+
 
 
 
@@ -153,29 +143,6 @@ std::array<itensor::MPO,3> Create_Heisenberg_Model_2D(int N, int M, double J, do
     std::array<itensor::MPO,3> output = {H,U1,U2};
     return output;
 
-
-}
-
-std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M){
-    int M0 = M[0].size();
-    int M1 = M.size();
-    std::vector<std::array<double,2>> vec;
-    vec.reserve(M0);
-    
-    for (int i = 0; i != M0; i++){
-        double v = 0;
-        double v2 = 0;
-        for (int j = 0; j != M1; j++){
-            v += M[j][i];
-            v2 += M[j][i] * M[j][i];
-        }
-        double mean = v/static_cast<double>(M1);
-        double std = std::sqrt(v2/M1 - mean*mean);
-        std::array<double,2> proto_vec = {mean,std};
-        vec.emplace_back(proto_vec);
-    }
-    
-    return vec;
 
 }
 
@@ -225,10 +192,12 @@ std::vector<std::array<double,2>> Calculate_Energies_WI(int TimeSteps, int Evols
 
     }
 
-    std::vector<std::array<double,2>> Mean_Energies = Mean(Energies);
+    std::vector<std::array<double,2>> Mean_Energies = priv::Mean(Energies);
     return Mean_Energies;
 
 }
+
+
 
 
 
@@ -241,8 +210,8 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evo
     E_vec.reserve(data + 1 + 2*static_cast<int>(ExtendTemp)*(data+1));
 
     itensor::Cplx t = -1 * beta * itensor::Cplx_1;
-    itensor::Cplx t2 = -5 * beta * itensor::Cplx_1;
-    itensor::Cplx t3 = -25 * beta * itensor::Cplx_1;
+    itensor::Cplx t2 = -3 * beta * itensor::Cplx_1;
+    itensor::Cplx t3 = -11 * beta * itensor::Cplx_1;
 
     for (int i = 0; i != Evols; i++){
         auto t1 = std::chrono::system_clock::now();
@@ -250,53 +219,15 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evo
 
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
-
-        int count = 0;
-
-        for (int j = 0; j != TimeSteps; j++){
-            double E = itensor::tdvp(psi,H,t,Sweeps,{"Truncate",true,
-                                                    "DoNormalize",true,
-                                                    "Quiet",true,
-                                                    "NumCenter",1,
-                                                    "ErrGoal",1E-7});
-            
-            if (j*data >= count*TimeSteps){
-                E_vec.push_back(E);
-                count++;
-                }
-            }
-
-
+        priv::tdvp_loop(E_vec,H,psi,t,Sweeps,TimeSteps,data);
+        
 
         if (ExtendTemp){
-            count = 0;
             E_vec.push_back(0);
-            for (int j = 0; j != TimeSteps; j++){
-                    double E = itensor::tdvp(psi,H,t2,Sweeps,{"Truncate",true,
-                                                            "DoNormalize",true,
-                                                            "Quiet",true,
-                                                            "NumCenter",1,
-                                                            "ErrGoal",1E-7});
-                    if (j*data >= count*TimeSteps){
-                        E_vec.push_back(E);
-                        count++;
-                    }
+            priv::tdvp_loop(E_vec,H,psi,t2,Sweeps,TimeSteps,data);
 
-            }
-            count = 0;
             E_vec.push_back(0);
-            for (int j = 0; j != TimeSteps; j++){
-                    double E = itensor::tdvp(psi,H,t3,Sweeps,{"Truncate",true,
-                                                            "DoNormalize",true,
-                                                            "Quiet",true,
-                                                            "NumCenter",1,
-                                                            "ErrGoal",1E-7});
-                    if (j*data >= count*TimeSteps){
-                        E_vec.push_back(E);
-                        count++;
-                    }
-
-            }
+            priv::tdvp_loop(E_vec,H,psi,t3,Sweeps,TimeSteps,data);
 
         }
         
@@ -308,7 +239,7 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evo
 
 
     }
-    std::vector<std::array<double,2>> Mean_Energies = Mean(Energies);
+    std::vector<std::array<double,2>> Mean_Energies = priv::Mean(Energies);
     return Mean_Energies;
     
 
@@ -361,8 +292,11 @@ void Save_Data_txt(std::string& filename, std::vector<std::array<T,n>>& vec){
     std::ofstream file(full_file);
 
     for (auto& varr : vec){
-        for (auto& v : varr){
-            file << std::to_string(v) <<  ", ";
+        auto v = varr.begin();
+        file << *v;
+
+        for (; v != varr.end(); v++){
+            file << ", " << *v;
         }
         file << "\n";
 
