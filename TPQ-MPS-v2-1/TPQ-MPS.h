@@ -1,6 +1,3 @@
-#ifndef TPQ_MPS
-#define TPQ_MPS
-
 #include <iostream>
 #include "itensor/all.h"
 #include <array>
@@ -17,6 +14,9 @@
 #include <cstdlib>
 #include "TDVP/tdvp.h"
 #include <fstream>
+#pragma once
+
+namespace TPQ_MPS{
 
 /*
 std::array<itensor::MPO*,2> Create_Heisenberg_Model_1D(int N, double J, double beta, itensor::SpinHalf& sites){
@@ -61,9 +61,7 @@ std::array<itensor::MPO,3> Create_Heisenberg_Model_1D(int N, double J, double be
 
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
-
 std::array<itensor::MPO,3> Create_Kitaev_Honeycomb_Model_2D(int N, int M, double Kx, double Ky, double Kz, double beta, T& sites, int auxiliaries){
-        
     auto H = Create_Kitaev_Honeycomb_Model_2D(N,M,Kx,Ky,Kz,sites,auxiliaries);
     auto U1 = itensor::expH(H,beta*0.5*(itensor::Cplx_1+itensor::Cplx_i)*0.5);
     auto U2 = itensor::expH(H,beta*0.5*(itensor::Cplx_1-itensor::Cplx_i)*0.5);
@@ -200,36 +198,36 @@ std::vector<std::array<double,2>> Calculate_Energies_WI(int TimeSteps, int Evols
 
 
 
-
-std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evols, double beta, itensor::MPO& H, itensor::SiteSet& sites, bool ExtendTemp=true, int init_rand_sites=32, int Sweeps=5, int data_points=100){
+std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, std::vector<double> intervals, int Evols, itensor::MPO& H, itensor::SiteSet& sites, int init_rand_sites=32, int Sweeps=5, int data_points=100){
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
 
     int data = std::min(data_points,TimeSteps);
     std::vector<double> E_vec;
-    E_vec.reserve(data + 1 + 2*static_cast<int>(ExtendTemp)*(data+1));
+    E_vec.reserve((data + 1) * intervals.size());
 
-    itensor::Cplx t = -1 * beta * itensor::Cplx_1;
-    itensor::Cplx t2 = -3 * beta * itensor::Cplx_1;
-    itensor::Cplx t3 = -11 * beta * itensor::Cplx_1;
+    std::vector<itensor::Cplx> T;
+    for (auto & it : intervals){
+        itensor::Cplx t = -0.5 * it / static_cast<double>(TimeSteps) * itensor::Cplx_1;
+        T.emplace_back(t);
+    }
+    
 
     for (int i = 0; i != Evols; i++){
         auto t1 = std::chrono::system_clock::now();
         auto psi = itensor::randomMPS(sites,init_rand_sites);
+        auto t = T.begin();
 
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
-        priv::tdvp_loop(E_vec,H,psi,t,Sweeps,TimeSteps,data);
+        priv::tdvp_loop(E_vec,H,psi,*t,Sweeps,TimeSteps,data);
+        t++;
         
-
-        if (ExtendTemp){
+        for (; t != T.end(); t++){
             E_vec.push_back(0);
-            priv::tdvp_loop(E_vec,H,psi,t2,Sweeps,TimeSteps,data);
-
-            E_vec.push_back(0);
-            priv::tdvp_loop(E_vec,H,psi,t3,Sweeps,TimeSteps,data);
-
+            priv::tdvp_loop(E_vec,H,psi,*t,Sweeps,TimeSteps,data);
         }
+
         
         Energies.push_back(E_vec);
         E_vec.clear();
@@ -248,8 +246,15 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, int Evo
 
 
 
-double DMRG(itensor::MPO& H, itensor::SiteSet& sites, int Sweeps=10){
+double DMRG(itensor::MPO& H, itensor::SiteSet& sites, int Sweeps=10, bool tdvp = false){
     auto psi0 = itensor::randomMPS(sites,1);
+
+    if (tdvp){
+        itensor::Cplx t = -0.1 * itensor::Cplx_1;
+        for (int i = 0; i != 5; i++){
+            itensor::tdvp(psi0,H,t,6);
+        }
+    }
 
     auto [energy, psi] = itensor::dmrg(H,psi0,Sweeps,{"Quiet",true});
     double e = energy;
@@ -294,6 +299,7 @@ void Save_Data_txt(std::string& filename, std::vector<std::array<T,n>>& vec){
     for (auto& varr : vec){
         auto v = varr.begin();
         file << *v;
+        v++;
 
         for (; v != varr.end(); v++){
             file << ", " << *v;
@@ -317,6 +323,6 @@ void Save_Data_txt(std::string& filename, T v){
 
 
 
+}
 
 
-#endif
