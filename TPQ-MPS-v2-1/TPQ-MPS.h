@@ -220,7 +220,7 @@ std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, std::ve
 
         std::complex<double> E = itensor::innerC(psi,H,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
-        priv::tdvp_loop(E_vec,H,psi,*t,Sweeps,TimeSteps,data);
+        priv::tdvp_loop(E_vec,H,psi,*t,Sweeps,TimeSteps,data,true);
         t++;
         
         for (; t != T.end(); t++){

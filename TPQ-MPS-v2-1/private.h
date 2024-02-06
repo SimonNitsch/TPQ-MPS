@@ -4,16 +4,27 @@
 #include <vector>
 #include <cmath>
 #include "TDVP/tdvp.h"
+#include "TDVP/basisextension.h"
 #include <type_traits>
 #pragma once
 
 
 namespace priv{
 
-void tdvp_loop(std::vector<double>& E_vec, itensor::MPO& H, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps, int data){
+void tdvp_loop(std::vector<double>& E_vec, itensor::MPO& H, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps, int data, bool KrylExp=false){
     
     int count = 0;
     for (int j = 0; j != TimeSteps; j++){
+
+        if (KrylExp && j < 5){
+            std::vector<itensor::Real> epsilonK = {1E-12, 1E-12};
+            itensor::addBasis(psi,H,epsilonK,{"Cutoff",1E-8,
+                                            "Method","DensityMatrix",
+                                            "KrylovOrd",3,
+                                            "DoNormalize",true,
+                                            "Quiet",true});
+        }
+
         double E = itensor::tdvp(psi,H,t,Sweeps,{"Truncate",true,
                                                 "DoNormalize",true,
                                                 "Quiet",true,
