@@ -40,7 +40,6 @@ std::array<itensor::MPO*,2> Create_Heisenberg_Model_1D(int N, double J, double b
 
 
 template<typename T, typename = std::enable_if<std::is_base_of<itensor::SiteSet, T>::value>>
-
 std::array<itensor::MPO,3> Create_Heisenberg_Model_1D(int N, double J, double beta, T& sites, int auxiliaries){
     sites = T(N+2*auxiliaries,{"ConserveQNs=",false});
     auto ampo = itensor::AutoMPO(sites);
@@ -135,7 +134,7 @@ itensor::MPO Create_Kitaev_Honeycomb_Model_2D(int N, int M, std::map<std::string
         priv::add_heisenberg_interaction(ampo,H_Details["J"],N,M,auxiliaries,"Honeycomb");
     }
 
-    if (static_cast<bool>(H_Details.count("hx") + H_Details.count("hy") + H_Details("hz"))){
+    if (static_cast<bool>(H_Details.count("hx") + H_Details.count("hy") + H_Details.count("hz"))){
         if (!(static_cast<bool>(H_Details.count("hx")))){
             H_Details["hx"] = 0;
         }
@@ -146,7 +145,7 @@ itensor::MPO Create_Kitaev_Honeycomb_Model_2D(int N, int M, std::map<std::string
             H_Details["hz"] = 0;
         }
 
-        std::array<double,3> h = {H_Details["hx"], H_Ddetails["hy"], H_Details["hz"]};
+        std::array<double,3> h = {H_Details["hx"], H_Details["hy"], H_Details["hz"]};
         priv::add_magnetic_field(ampo,h,length,auxiliaries);
     }
 
@@ -344,7 +343,8 @@ double DMRG(itensor::MPO& H, itensor::SiteSet& sites, int Sweeps=10, bool tdvp =
 
 
 
-
+// Function to Save Data to a binary file [DEPRECEATED]
+// Use Save_Data_txt instead
 
 
 template<std::size_t n, typename T>
@@ -367,6 +367,9 @@ void Save_Data_bin(std::string& filename, std::vector<std::array<T,n>>& vec, int
 
 }
 
+
+
+// Function to save Data to a txt file
 
 template<std::size_t n, typename T>
 void Save_Data_txt(std::string& filename, std::vector<std::array<T,n>>& vec){
