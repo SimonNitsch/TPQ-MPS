@@ -55,9 +55,11 @@ class Kitaev_Model{
     }
 
 
-    void add_kitaev_interaction(int LX, int LY, std::vector<int> p_vec, int aux);
+    void add_kitaev_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
     void add_magnetic_interaction(int LX, int LY, int aux);
-    void add_heisenberg_interaction(int LX, int LY, std::vector<int> p_vec, int aux);
+    void add_heisenberg_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
+    void add_gamma_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
+    void add_gammaq_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
 
     std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M);
     void tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps, int data);
@@ -89,8 +91,11 @@ class Kitaev_Model{
         add_kitaev_interaction(LX,LY,full_points,aux);
         add_magnetic_interaction(LX,LY,aux);
         add_heisenberg_interaction(LX,LY,full_points,aux);
-
-        H_list[0] = &(itensor::toMPO(ampo));
+        add_gamma_interaction(LX,LY,full_points,aux);
+        add_gammaq_interaction(LX,LY,full_points,aux);
+        
+        auto H0 = itensor::toMPO(ampo);
+        H_list[0] = &H0;
         return this;
     }
 
@@ -109,8 +114,11 @@ class Kitaev_Model{
         add_kitaev_interaction(LX,LY,full_points,aux);
         add_magnetic_interaction(LX,LY,aux);
         add_heisenberg_interaction(LX,LY,full_points,aux);
+        add_gamma_interaction(LX,LY,full_points,aux);
+        add_gammaq_interaction(LX,LY,full_points,aux);
 
-        H_list[0] = &(itensor::toMPO(ampo));        
+        auto H0 = itensor::toMPO(ampo);
+        H_list[0] = &H0;        
         return this;
     }
 

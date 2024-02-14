@@ -51,7 +51,7 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int LX, int LY, int pos){
 
 
 
-void Kitaev_Model::add_kitaev_interaction(int LX, int LY, std::vector<int> p_vec, int aux){
+void Kitaev_Model::add_kitaev_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
     double K = H_Details.get("K");
     
     for (int& i : p_vec){
@@ -84,7 +84,7 @@ void Kitaev_Model::add_magnetic_interaction(int LX, int LY, int aux){
 
 
 
-void Kitaev_Model::add_heisenberg_interaction(int LX, int LY, std::vector<int> p_vec, int aux){
+void Kitaev_Model::add_heisenberg_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
     double J = H_Details.get("J");
 
     for (int& i : p_vec){
@@ -107,6 +107,61 @@ void Kitaev_Model::add_heisenberg_interaction(int LX, int LY, std::vector<int> p
     }
 
 }
+
+
+void Kitaev_Model::add_gamma_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
+    double G = H_Details.get("Gamma");
+
+    for (int& i : p_vec){
+        std::array<int,3> n = get_neighbour_data(LX,LY,i);
+        if (n[0] != 0){
+            ampo += G,"Sy",i+aux,"Sz",n[0]+aux;
+            ampo += G,"Sz",i+aux,"Sy",n[0]+aux;
+        }
+        if (n[1] != 0){
+            ampo += G,"Sx",i+aux,"Sz",n[1]+aux;
+            ampo += G,"Sz",i+aux,"Sx",n[1]+aux;
+        }
+        if (n[2] != 0){
+            ampo += G,"Sx",i+aux,"Sy",n[2]+aux;
+            ampo += G,"Sy",i+aux,"Sx",n[2]+aux;
+        }
+    }
+
+}
+
+
+
+void Kitaev_Model::add_gammaq_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
+    double GQ = H_Details.get("GammaQ");
+
+    for (int& i : p_vec){
+        std::array<int,3> n = get_neighbour_data(LX,LY,i);
+        if (n[0] != 0){
+            ampo += GQ,"Sy",i+aux,"Sx",n[0]+aux;
+            ampo += GQ,"Sx",i+aux,"Sy",n[0]+aux;
+            ampo += GQ,"Sz",i+aux,"Sx",n[0]+aux;
+            ampo += GQ,"Sx",i+aux,"Sz",n[0]+aux;
+        }
+        if (n[1] != 0){
+            ampo += GQ,"Sx",i+aux,"Sy",n[1]+aux;
+            ampo += GQ,"Sy",i+aux,"Sx",n[1]+aux;
+            ampo += GQ,"Sz",i+aux,"Sy",n[1]+aux;
+            ampo += GQ,"Sy",i+aux,"Sz",n[1]+aux;
+        }
+        if (n[2] != 0){
+            ampo += GQ,"Sx",i+aux,"Sz",n[2]+aux;
+            ampo += GQ,"Sz",i+aux,"Sx",n[2]+aux;
+            ampo += GQ,"Sz",i+aux,"Sy",n[2]+aux;
+            ampo += GQ,"Sy",i+aux,"Sz",n[2]+aux;
+        }
+    }
+
+}
+
+
+
+
 
 
 
