@@ -62,7 +62,7 @@ class Kitaev_Model{
     void add_gammaq_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
 
     std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M);
-    void tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps, int data);
+    void tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps);
 
 
     template<std::size_t n, typename T>
@@ -143,7 +143,7 @@ class Kitaev_Model{
         }
     }
 
-    void Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int init_rand_sites=32, int Sweeps=5, int data_points=100);
+    void Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int init_rand_sites=32, int Sweeps=5);
     
     void DMRG(int Sweeps=10){
         Calc_Type = 1;

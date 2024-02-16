@@ -191,7 +191,7 @@ std::vector<std::array<double,2>> Kitaev_Model::Mean(std::vector<std::vector<dou
 
 
 
-void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps, int data){
+void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps){
     int count = 0;
     itensor::MPO H0 = *(H_list[0]);
 
@@ -199,25 +199,23 @@ void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, iten
         double E = itensor::tdvp(psi,H0,t,Sweeps,{"DoNormalize",true,
                                                 "Quiet",true,
                                                 "ErrGoal",1E-7});
-            
-        if (j*data >= count*TimeSteps){
-            E_vec.push_back(E);
-            count++;
+        
+        E_vec.push_back(E);
+        
         }
     }
 }
 
 
 
-void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int init_rand_sites=32, int Sweeps=5, int data_points=100){
+void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int init_rand_sites=32, int Sweeps=5){
     Calc_Type = 2;
     
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
 
-    int data = std::min(data_points,TimeSteps);
     std::vector<double> E_vec;
-    E_vec.reserve((data + 1) * intervals.size());
+    E_vec.reserve((TimeSteps + 1) * intervals.size());
 
     itensor::MPO H0 = *(H_list[0]);
 
@@ -235,12 +233,12 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
 
         std::complex<double> E = itensor::innerC(psi,H0,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
-        tdvp_loop(E_vec,psi,*t,Sweeps,TimeSteps,data);
+        tdvp_loop(E_vec,psi,*t,Sweeps,TimeSteps);
         t++;
         
         for (; t != T.end(); t++){
             E_vec.push_back(0);
-            tdvp_loop(E_vec,psi,*t,Sweeps,TimeSteps,data);
+            tdvp_loop(E_vec,psi,*t,Sweeps,TimeSteps);
         }
 
         
