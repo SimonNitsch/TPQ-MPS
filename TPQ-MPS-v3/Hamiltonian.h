@@ -39,6 +39,16 @@ class Hamiltonian{
         }
     }
 
+    void print(){
+        std::cout << "K: " << H["K"] << "\n";
+        std::cout << "J: " << H["J"] << "\n";
+        std::cout << "hx: " << H["hx"] << "\n";
+        std::cout << "hy: " << H["hy"] << "\n";
+        std::cout << "hz: " << H["hz"] << "\n";
+        std::cout << "Gamma: " << H["Gamma"] << "\n";
+        std::cout << "GammaQ: " << H["GammaQ"] << "\n";
+    }
+
 
 };
 
