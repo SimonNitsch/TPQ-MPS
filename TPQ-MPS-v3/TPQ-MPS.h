@@ -26,7 +26,7 @@ class Kitaev_Model{
     private:
     itensor::AutoMPO ampo;
     int Lattice_Type; // 1 for Honeycomb, 2 for Triangular
-    int Calc_Type; // 1 for DMRG, 2 for TDVP
+    int Calc_Type; // 1 for DMRG, 2 for TDVP, 3 for TDVP with Heat Capacity and Entropy
 
     itensor::MPO H0;
     Hamiltonian H_Details;
@@ -59,7 +59,7 @@ class Kitaev_Model{
     void add_gammaq_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
 
     std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M);
-    void tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps);
+    void tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& sweeps);
 
 
     template<std::size_t n, typename T>
@@ -106,7 +106,7 @@ class Kitaev_Model{
         add_gamma_interaction(LX,LY,full_points,aux);
         add_gammaq_interaction(LX,LY,full_points,aux);
         
-        H0 = itensor::toMPO(ampo);
+        H0 = itensor::toMPO(this -> ampo);
 
     }
 
@@ -162,7 +162,7 @@ class Kitaev_Model{
 */
 
 
-    void Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, bool Heat_Capacity=true, int init_rand_sites=32, int Sweeps=5);
+    void Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, std::string Accuracy="Normal", bool Heat_Capacity=true, int init_rand_sites=32);
     std::array<std::vector<std::array<double,2>>,2> Calculate_Heat_Capacity(int TimeSteps, std::vector<double>& intervals, std::vector<std::vector<double>>& Energies);
 
     Hamiltonian Get_Constants(){
@@ -179,6 +179,14 @@ class Kitaev_Model{
         }
         else if (Calc_Type == 2){
             save_data(x,E);
+        } 
+        else if (Calc_Type == 3){
+            std::string xE = x + "_E";
+            std::string xC = x + "_C";
+            std::string xS = x + "_S";
+            save_data(xE,E);
+            save_data(xC,Cv);
+            save_data(xS,S);
         }
     }
 

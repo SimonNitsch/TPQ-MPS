@@ -22,12 +22,13 @@ namespace priv{
 // The TDVP loop for Imaginary Time Evolution
 // Probably responsibly for more than 95% of the computation time
 void tdvp_loop(std::vector<double>& E_vec, itensor::MPO& H, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps, int data){
-    
+    auto S = itensor::Sweeps(Sweeps,1,1024);
+
     int count = 0;
     for (int j = 0; j != TimeSteps; j++){
-        double E = itensor::tdvp(psi,H,t,Sweeps,{"DoNormalize",true,
-                                                "Quiet",true,
-                                                "ErrGoal",1E-7});
+        double E = itensor::tdvp(psi,H,t,S,{"Silent",true,
+                                            "ErrGoal",1E-7});
+        std::cout << E << "\n";
             
         if (j*data >= count*TimeSteps){
             E_vec.push_back(E);

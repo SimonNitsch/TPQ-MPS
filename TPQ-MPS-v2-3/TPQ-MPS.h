@@ -150,6 +150,7 @@ itensor::MPO Create_Kitaev_Honeycomb_Model_2D(int N, int M, std::map<std::string
     }
 
     auto H = itensor::toMPO(ampo);
+    itensor::PrintData(H);
     return H;
 }
 
@@ -275,7 +276,7 @@ std::vector<std::array<double,2>> Calculate_Energies_WI(int TimeSteps, int Evols
 // Calculate Energy over Inverse Temperature with the TDVP method
 
 
-std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, std::vector<double> intervals, int Evols, itensor::MPO& H, itensor::SiteSet& sites, int init_rand_sites=32, int Sweeps=5, int data_points=100){
+std::vector<std::array<double,2>> Calculate_Energies_TDVP(int TimeSteps, std::vector<double> intervals, int Evols, itensor::MPO& H, itensor::SiteSet& sites, int init_rand_sites=32, int Sweeps=1, int data_points=100){
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
 

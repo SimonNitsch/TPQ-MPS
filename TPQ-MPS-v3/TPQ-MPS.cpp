@@ -191,15 +191,14 @@ std::vector<std::array<double,2>> Kitaev_Model::Mean(std::vector<std::vector<dou
 
 
 
-void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx t, int Sweeps, int TimeSteps){
+void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& Sweeps){
     int count = 0;
 
     for (int j = 0; j != TimeSteps; j++){
-        double E = itensor::tdvp(psi,H0,t,Sweeps,{"DoNormalize",true,
-                                                "Quiet",true,
-                                                "ErrGoal",1E-7});
+        double E = itensor::tdvp(psi,H0,t,Sweeps,args);
         
         E_vec.push_back(E);
+        std::cout << E << "\n";
         
     }
 }
@@ -210,7 +209,7 @@ void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, iten
 
 
 template<std::size_t n, typename T>
-void save_data(std::string& filename, std::vector<std::array<T,n>>& vec){
+void Kitaev_Model::save_data(std::string filename, std::vector<std::array<T,n>>& vec){
     std::string ending = ".txt";
     std::string full_file = filename + ending;
     std::ofstream file(full_file);
@@ -232,19 +231,21 @@ void save_data(std::string& filename, std::vector<std::array<T,n>>& vec){
 
 
 template<typename T>
-void save_data(std::string& filename, T v){
+void Kitaev_Model::save_data(std::string filename, T v){
     std::vector<std::array<T,1>> vec;
     std::array<T,1> v_array = {v};
     vec.push_back(v_array);
 
-    Save_Data_txt(filename, vec);
+    save_data(filename, vec);
 }
 
 
 
 
 
-void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, bool Heat_Capacity, int init_rand_sites, int Sweeps){
+
+
+void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, std::string Accuracy, bool Heat_Capacity, int init_rand_sites){
     Calc_Type = 2;
     
     std::vector<std::vector<double>> Energies;
@@ -252,6 +253,20 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
 
     std::vector<double> E_vec;
     E_vec.reserve((TimeSteps + 1) * intervals.size());
+
+    itensor::Sweeps Sweeps;
+    itensor::Args tdvp_args;
+    if (Accuracy == "Fast"){
+        Sweeps = itensor::Sweeps(1);
+        tdvp_args = itensor::Args({"Silent",true,"ErrGoal",1E-7,"NumCenter",1});
+    } else if (Accuracy == "Slow") {
+        Sweeps = itensor::Sweeps(1,1,1024);
+        tdvp_args = itensor::Args({"Silent",true,"ErrGoal",1E-7});
+    } else {
+        Sweeps = itensor::Sweeps(1,1,1024);
+        tdvp_args = itensor::Args({"Silent",true,"ErrGoal",1E-7,"NumCenter",1});
+    }
+
 
     std::vector<itensor::Cplx> T;
     for (auto & it : intervals){
@@ -267,12 +282,12 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
 
         std::complex<double> E = itensor::innerC(psi,H0,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
-        tdvp_loop(E_vec,psi,*t,Sweeps,TimeSteps);
+        tdvp_loop(E_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
         t++;
         
         for (; t != T.end(); t++){
             E_vec.push_back(0);
-            tdvp_loop(E_vec,psi,*t,Sweeps,TimeSteps);
+            tdvp_loop(E_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
         }
 
         
@@ -302,6 +317,7 @@ std::array<std::vector<std::array<double,2>>,2> Kitaev_Model::Calculate_Heat_Cap
     std::vector<double> C_vec;
     std::vector<std::vector<double>> Entropy;
     std::vector<double> En_vec;
+    Calc_Type = 3;
 
     Capacity.reserve(Energies.size());
     C_vec.reserve(TimeSteps*intervals.size());
