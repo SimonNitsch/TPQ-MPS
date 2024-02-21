@@ -68,6 +68,10 @@ class Kitaev_Model{
     template<typename T>
     void save_data(std::string filename, T v);
 
+    std::vector<double> derivative(std::vector<double>& f, double dx);
+    std::vector<double> integral(std::vector<double>& f, double dx, double c);
+    std::vector<double> multiply(std::vector<double>& a, std::vector<double>& b);
+
 
 
     public:

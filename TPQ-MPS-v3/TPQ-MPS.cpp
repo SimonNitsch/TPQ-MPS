@@ -273,6 +273,7 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
         itensor::Cplx t = -0.5 * it / static_cast<double>(TimeSteps) * itensor::Cplx_1;
         T.emplace_back(t);
     }
+    auto t0 = std::chrono::system_clock::now();
     
 
     for (int i = 0; i != Evols; i++){
@@ -301,10 +302,20 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
     }
 
     if (Heat_Capacity){
-        
+        auto CvS = Calculate_Heat_Capacity(TimeSteps,intervals,Energies);
+        Cv = CvS[0];
+        S = CvS[1];
     }
 
     E = Mean(Energies);
+
+    auto t3 = std::chrono::system_clock::now();
+    auto time_total = std::chrono::duration<double>(t3-t0);
+
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(time_total);
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_total);
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_total);
+    std::cout << "Finished Imaginary Time Evolution, Time Needed: " << hours.count() << " h" << minutes.count() << " min" << seconds.count() << " sec";
 }
 
 
@@ -331,48 +342,123 @@ std::array<std::vector<std::array<double,2>>,2> Kitaev_Model::Calculate_Heat_Cap
         d_beta.push_back(i / static_cast<double>(TimeSteps));
     }
 
-    for (auto& e : Energies){
-        for (int i = 0; i != intervals.size(); i++){
-            C_vec.push_back(0);
-            double b0 = 0;
-            for (int j = 0; j != i; j++){
-                b0 += intervals[j];
-            }
+    std::vector<std::vector<double>> beta2;
+    std::vector<double> one_beta2;
+    beta2.reserve(intervals.size());
+    one_beta2.reserve(TimeSteps-1);
+    std::vector<std::vector<double>> beta_1;
+    std::vector<double> one_beta_1;
+    beta_1.reserve(intervals.size());
+    one_beta_1.reserve(TimeSteps-1);
 
-            for (int j = 1; j != TimeSteps; j++){
-                double beta = b0 + j*d_beta[i];
-                double c = (-1) * beta * beta * (e[(TimeSteps+1)*i+j+1] - e[(TimeSteps+1)*i+j]) / d_beta[i];
-                C_vec.push_back(c);
-            }
+    for (int i = 0; i != intervals.size(); i++){
+        int base_beta = 0;
+        for (int k = 0; k != i; k++){
+            base_beta += intervals[k];
         }
-        Capacity.push_back(C_vec);
-        C_vec.clear();
+
+        for (int j = 0; j != TimeSteps; j++){
+            double curr_beta = base_beta+(j)*d_beta[i];
+            one_beta2.push_back(curr_beta*curr_beta*(-1));
+            if (curr_beta == 0){
+                curr_beta = 1;
+            }
+            one_beta_1.push_back(1/curr_beta);
+        }
+        beta2.push_back(one_beta2);
+        beta_1.push_back(one_beta_1);
+        one_beta2.clear();
+        one_beta_1.clear();
     }
 
+    for (int i = 0; i != Energies.size(); i++){
+        double Int_Const = 0;
+        double tobeintlast;
 
-    for (auto& e : Capacity){
-        for (int i = 0; i != intervals.size(); i++){
-            En_vec.push_back(0);
-            double b0 = 0;
-            for (int j = 0; j != i; j++){
-                b0 += intervals[j];
+        for (int j = 0; j != intervals.size(); j++){
+            auto first = Energies[i].begin() + j*(TimeSteps+1)+1;
+            auto last = Energies[i].begin() + (j+1)*(TimeSteps+1);
+            auto numbers = std::vector<double>(first,last);
+            if (j == 0){
+                numbers.insert(numbers.begin(),*(first-1));
+            } else {
+                numbers.insert(numbers.begin(),*(first-2));
             }
 
-            for (int j = 1; j != (TimeSteps-1); j++){
-                double beta = b0 + j*d_beta[i];
-                double en = (-1) * beta * beta * beta * (e[TimeSteps*i+j+1] - e[TimeSteps*i+j]) / d_beta[i];
-                En_vec.push_back(en);
+            C_vec.push_back(0);
+            En_vec.push_back(0);
+            std::vector<double> diff = derivative(numbers,d_beta[j]);
+            std::vector<double> c = multiply(diff,beta2[j]);
+            C_vec.insert(C_vec.end(),c.begin(),c.end());
+
+            std::vector<double> tobeint = multiply(c,beta_1[j]);
+            if (j != 0){
+                tobeint.insert(tobeint.begin(),tobeintlast);
+            }
+            tobeintlast = tobeint.back();
+            std::vector<double> en = integral(tobeint,d_beta[j],Int_Const);
+            En_vec.insert(En_vec.end(),en.begin(),en.end());
+        
+            std::cout << "  " << Int_Const << "  ";
+            Int_Const += en.back();
+            for (auto& nu : tobeint){
+                std::cout << nu << " ";
             }
         }
+        std::cout << "\n\n";
+        Capacity.push_back(C_vec);
         Entropy.push_back(En_vec);
+        C_vec.clear();
         En_vec.clear();
     }
+    
+    
 
     std::array<std::vector<std::array<double,2>>,2> result = {Mean(Capacity), Mean(Entropy)};
     return result;
 
 
 }
+
+
+
+std::vector<double> Kitaev_Model::derivative(std::vector<double>& f, double dx){
+    std::vector<double> df;
+    df.reserve(f.size()-1);
+
+    for (auto i = f.begin(); i != (f.end()-1); i++){
+        df.push_back((*(i+1) - *i)/dx);
+    }
+    return df;
+}
+
+
+std::vector<double> Kitaev_Model::integral(std::vector<double>& f, double dx, double c){
+    std::vector<double> fdx;
+    fdx.reserve(f.size());
+    double cur = c;
+
+    for (auto i = f.begin(); i != f.end() - 1; i++){
+        cur += *i * dx + (*(i+1) - *i) * dx/2;
+        fdx.push_back(cur);
+    }
+    return fdx;
+}
+
+
+
+std::vector<double> Kitaev_Model::multiply(std::vector<double>&a, std::vector<double>&b){
+    int maxsize = std::max(a.size(),b.size());
+    std::vector<double> c;
+    c.reserve(maxsize);
+
+    for (int i = 0; i != maxsize; i++){
+        c.push_back(a[i]*b[i]);
+    }
+    return c;
+}
+
+
 
 
 
