@@ -13,6 +13,9 @@ class Hamiltonian{
     public:
     Hamiltonian(){
         H["K"] = 0;
+        H["Kx"] = 0;
+        H["Ky"] = 0;
+        H["Kz"] = 0;
         H["J"] = 0;
         H["hx"] = 0;
         H["hy"] = 0;
@@ -33,6 +36,12 @@ class Hamiltonian{
     void set(std::string x, double n){
         if (H.count(x)){
             H[x] = n;
+
+            if (x == "K"){
+                H[x+"x"] = n;
+                H[x+"y"] = n;
+                H[x+"z"] = n;
+            }
         }
         else{
             throw std::invalid_argument("Input Argument is not valid");
@@ -40,7 +49,9 @@ class Hamiltonian{
     }
 
     void print(){
-        std::cout << "K: " << H["K"] << "\n";
+        std::cout << "Kx: " << H["Kx"] << "\n";
+        std::cout << "Ky: " << H["Ky"] << "\n";
+        std::cout << "Kz: " << H["Kz"] << "\n";
         std::cout << "J: " << H["J"] << "\n";
         std::cout << "hx: " << H["hx"] << "\n";
         std::cout << "hy: " << H["hy"] << "\n";

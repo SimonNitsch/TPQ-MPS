@@ -52,18 +52,20 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int LX, int LY, int pos){
 
 
 void Kitaev_Model::add_kitaev_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
-    double K = H_Details.get("K");
+    double Kx = H_Details.get("Kx");
+    double Ky = H_Details.get("Ky");
+    double Kz = H_Details.get("Kz");
     
     for (int& i : p_vec){
         std::array<int,3> n = get_neighbour_data(LX,LY,i);
         if (n[0] != 0){
-            ampo += K,"Sx",i+aux,"Sx",n[0]+aux;
+            ampo += Kx,"Sx",i+aux,"Sx",n[0]+aux;
         }
         if (n[1] != 0){
-            ampo += K,"Sy",i+aux,"Sy",n[1]+aux;
+            ampo += Ky,"Sy",i+aux,"Sy",n[1]+aux;
         }
         if (n[2] != 0){
-            ampo += K,"Sz",i+aux,"Sz",n[2]+aux;
+            ampo += Kz,"Sz",i+aux,"Sz",n[2]+aux;
         }
     }
 
@@ -161,6 +163,23 @@ void Kitaev_Model::add_gammaq_interaction(int LX, int LY, std::vector<int>& p_ve
 
 
 
+itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
+    int Py = std::max((LY/2)-1,0);
+    int Px = LX-1;
+    auto fluxop = itensor::AutoMPO(sites);
+
+    for (int i = 0; i != Px; i++){
+        for (int j = 0; j != Py; j++){
+            int f = LY*i + 2*j + 2 + aux;
+            fluxop += 64/Px/Py,"Sx",f,"Sy",f+1,"Sz",f+2,"Sx",f+LY+1,"Sy",f+LY,"Sz",f+LY-1;
+        }
+    }
+    auto fluxH = itensor::toMPO(fluxop);
+    return fluxH;
+}
+
+
+
 
 
 
@@ -198,6 +217,21 @@ void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, itensor::MPS& psi, iten
         double E = itensor::tdvp(psi,H0,t,Sweeps,args);
         
         E_vec.push_back(E);
+        std::cout << E << "\n";
+        
+    }
+}
+
+
+void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, std::vector<double>& W_vec, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& Sweeps){
+    int count = 0;
+
+    for (int j = 0; j != TimeSteps; j++){
+        double E = itensor::tdvp(psi,H0,t,Sweeps,args);
+        std::complex<double> w = itensor::innerC(psi,H_flux,psi);
+
+        E_vec.push_back(E);
+        W_vec.push_back(std::real(w));
         std::cout << E << "\n";
         
     }
@@ -246,13 +280,20 @@ void Kitaev_Model::save_data(std::string filename, T v){
 
 
 void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, std::string Accuracy, bool Heat_Capacity, int init_rand_sites){
-    Calc_Type = 2;
+    Calc_Type = false;
     
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
+    std::vector<std::vector<double>> Flux;
 
     std::vector<double> E_vec;
     E_vec.reserve((TimeSteps + 1) * intervals.size());
+    std::vector<double> W_vec;
+    if (Honeycomb_Flux){
+        Flux.reserve(Evols);
+        W_vec.reserve((TimeSteps+1) * intervals.size());
+    }
+
 
     itensor::Sweeps Sweeps;
     itensor::Args tdvp_args;
@@ -263,7 +304,7 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
         Sweeps = itensor::Sweeps(1,1,1024);
         tdvp_args = itensor::Args({"Silent",true,"ErrGoal",1E-7});
     } else {
-        Sweeps = itensor::Sweeps(1,1,1024);
+        Sweeps = itensor::Sweeps(1,1,2048,1e-10);
         tdvp_args = itensor::Args({"Silent",true,"ErrGoal",1E-7,"NumCenter",1});
     }
 
@@ -283,20 +324,37 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
 
         std::complex<double> E = itensor::innerC(psi,H0,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
-        tdvp_loop(E_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
+
+        if (Honeycomb_Flux){
+            std::complex<double> w = itensor::innerC(psi,H_flux,psi);
+            W_vec.push_back(std::real(w));
+            tdvp_loop(E_vec,W_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
+        } else {
+            tdvp_loop(E_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
+        }
         t++;
         
         for (; t != T.end(); t++){
             E_vec.push_back(0);
-            tdvp_loop(E_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
+            if (Honeycomb_Flux){
+                W_vec.push_back(0);
+                tdvp_loop(E_vec,W_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
+            } else {
+                tdvp_loop(E_vec,psi,*t,TimeSteps,tdvp_args,Sweeps);
+            }
         }
 
         
         Energies.push_back(E_vec);
         E_vec.clear();
+        if (Honeycomb_Flux){
+            Flux.push_back(W_vec);
+            W_vec.clear();
+        }
+
         auto t2 = std::chrono::system_clock::now();
         auto time = std::chrono::duration<double>(t2-t1);
-        std::cout << "Finished Evolution Number " << (i+1) << "/" << Evols << ", Time Needed: " << time.count() << " seconds\n" << std::flush;
+        std::cout << "Finished Evolution Number " << (i+1) << "/" << Evols << ", Time Needed: " << time.count() << " Seconds\n" << std::flush;
 
 
     }
@@ -308,14 +366,17 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
     }
 
     E = Mean(Energies);
+    if (Honeycomb_Flux){
+        W = Mean(Flux);
+    }
 
     auto t3 = std::chrono::system_clock::now();
     auto time_total = std::chrono::duration<double>(t3-t0);
 
     auto hours = std::chrono::duration_cast<std::chrono::hours>(time_total);
-    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_total);
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_total);
-    std::cout << "Finished Imaginary Time Evolution, Time Needed: " << hours.count() << " h" << minutes.count() << " min" << seconds.count() << " sec";
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_total-hours);
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_total-hours-minutes);
+    std::cout << "Finished Imaginary Time Evolution, Time Needed: " << hours.count() << " Hours, " << minutes.count() << " Minutes, " << seconds.count() << " Seconds";
 }
 
 
@@ -328,7 +389,6 @@ std::array<std::vector<std::array<double,2>>,2> Kitaev_Model::Calculate_Heat_Cap
     std::vector<double> C_vec;
     std::vector<std::vector<double>> Entropy;
     std::vector<double> En_vec;
-    Calc_Type = 3;
 
     Capacity.reserve(Energies.size());
     C_vec.reserve(TimeSteps*intervals.size());
@@ -400,7 +460,7 @@ std::array<std::vector<std::array<double,2>>,2> Kitaev_Model::Calculate_Heat_Cap
             En_vec.insert(En_vec.end(),en.begin(),en.end());
         
             std::cout << "  " << Int_Const << "  ";
-            Int_Const += en.back();
+            Int_Const = en.back();
             for (auto& nu : tobeint){
                 std::cout << nu << " ";
             }
