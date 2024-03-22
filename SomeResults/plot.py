@@ -4,10 +4,10 @@ import os
 
 
 
-def Plot(filename, filename2, intervals, particles):
+def Plot(filename, filename2, intervals, particles, K=0):
     x = []
     sum_i = 0
-    YE = np.loadtxt(filename+"_E.txt",delimiter=",")
+    YE = np.loadtxt(filename+"E.txt",delimiter=",")
     G = np.loadtxt(filename2+"_GSE.txt") / particles
     print(G)
     
@@ -16,42 +16,40 @@ def Plot(filename, filename2, intervals, particles):
     
     CS = True
     W = True
+    Chi = True
     try:
-        YC = np.loadtxt(filename+"_C.txt",delimiter=",")
-        YS = np.loadtxt(filename+"_S.txt",delimiter=",")
-        YS = np.insert(YS,0,np.array([0,0]),0)
-        yc = []
-        ys = []
+        YC = np.loadtxt(filename+"C.txt",delimiter=",")
+        YS = np.loadtxt(filename+"S.txt",delimiter=",")
     except:
         CS = False
     try:
-        YW = np.loadtxt(filename+"_W.txt",delimiter=",")
+        YW = np.loadtxt(filename+"W.txt",delimiter=",")
         yw = []
     except:
         W = False
+    try:
+        YCHIx = np.loadtxt(filename+"Chix.txt",delimiter=",")
+        YCHIy = np.loadtxt(filename+"Chiy.txt",delimiter=",")
+        YCHIz = np.loadtxt(filename+"Chiz.txt",delimiter=",")
+    except:
+        Chi = False
         
-    ye = []
         
               
         
     for i in range(intervals.size):
-        x.append(np.linspace(sum_i,sum_i+intervals[i],interval_steps)**(-1))
+        x.append(np.linspace(sum_i,sum_i+intervals[i],interval_steps,endpoint=False)**(-1))
         sum_i += intervals[i]
         
-        ye.append((YE[i*interval_steps:(i+1)*interval_steps,:])/particles)
-        if CS:
-            yc.append((YC[i*interval_steps:(i+1)*interval_steps,:])/particles)
-            ys.append((YS[i*interval_steps:(i+1)*interval_steps,:])/particles)
-        if W:
-            yw.append(YW[i*interval_steps:(i+1)*interval_steps,:])
+    x.append(np.array([1/sum_i]))
         
 
-    x = np.hstack(x)
+    x = np.hstack(x)[1:]
     xb = 1/x
-    ye = np.vstack(ye)
+    ye = YE[1:,:] / particles
     plt.figure()
     plt.plot(x,ye[:,0],"b")
-    plt.plot([x[-1],x[1]],[G,G],"r--")
+    plt.plot([x[-1],x[0]],[G,G],"r--")
     plt.legend(["Energy","Ground State Energy"])
     plt.plot(x,ye[:,0]+ye[:,1],"b-.")
     plt.plot(x,ye[:,0]-ye[:,1],"b-.")
@@ -68,8 +66,9 @@ def Plot(filename, filename2, intervals, particles):
     
     
     if CS:
-        yc = np.vstack(yc)
-        ys = np.vstack(ys)
+        yc = YC[1:,:] / particles
+        ys = YS[1:,:] / particles
+        ys[:,0] = np.max(ys[:,0]) - ys[:,0]
         plt.figure()
         plt.plot(x,yc[:,0],"r")
         plt.plot(x,ys[:,0],"g")
@@ -83,7 +82,7 @@ def Plot(filename, filename2, intervals, particles):
         plt.show()
         
     if W:
-        yw = np.vstack(yw)
+        yw = YW[1:,:]
         plt.figure()
         plt.plot(x,yw[:,0],"y")
         plt.plot(x,yw[:,0]+yw[:,1],"y-.")
@@ -92,20 +91,48 @@ def Plot(filename, filename2, intervals, particles):
         plt.legend(["Plaquette Flux"])
         plt.show()
         
+    if Chi:
+        ycx = YCHIx[1:,:] / particles
+        ycy = YCHIy[1:,:] / particles
+        ycz = YCHIz[1:,:] / particles
+        plt.figure()
+        plt.plot(x,ycx[:,0],"c")
+        plt.plot(x,ycy[:,0],"y")
+        plt.plot(x,ycz[:,0],"m")
+        plt.legend([r"$\chi^x$", r"$\chi^y$", r"$\chi^z$"])
+        plt.plot(x,ycx[:,0]+ycx[:,1],"c-.")
+        plt.plot(x,ycx[:,0]-ycx[:,1],"c-.")
+        plt.plot(x,ycy[:,0]+ycy[:,1],"y-.")
+        plt.plot(x,ycy[:,0]-ycy[:,1],"y-.")
+        plt.plot(x,ycz[:,0]+ycz[:,1],"m-.")
+        plt.plot(x,ycz[:,0]-ycz[:,1],"m-.")
+        plt.plot(x,Curie(x,K),"k:")
+        plt.plot(x,Dimerx(x,K),"c:")
+        plt.plot(x,Dimerz(x,K),"m:")
+        plt.xscale("log")
+        plt.show()
+        
+
+
+
+Curie = lambda T, J : 1 / (4*T + J)
+Dimerz = lambda T, J : 1/2/T * np.exp(J/4/T) / (np.exp(J/4/T) - np.exp(-J/4/T))
+Dimerx = lambda T, J : 1/J * np.tanh(J/4/T)
+        
         
 
 
 if __name__=="__main__":
     
-    intervals = np.array([100])
+    intervals = np.array([1,9,20,30,40,50,50,50,50,50,50,50,50])
     particles = 48
-    name = "Check5TwoSiteBigTest"
-    name2 = "ResutFolder2/43GSE"
+    name = "S1/SecondTry/"
+    name2 = "S1/08081one"
     
     
     
     os.chdir("../SomeResults")    
-    Plot(name,name2,intervals,particles)
+    Plot(name,name2,intervals,particles,1.33)
 
 
 '''

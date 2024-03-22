@@ -14,6 +14,7 @@
 #include <fstream>
 #include "Hamiltonian.h"
 #include <exception>
+#include <filesystem>
 #pragma once
 
 
@@ -28,13 +29,15 @@ class Kitaev_Model{
     int Lattice_Type; // 1 for Honeycomb, 2 for Triangular
     bool Calc_Type; // true for DMRG, false for TDVP
 
-    itensor::MPO H0, H2;
+    public:
+    itensor::MPO H0;
     std::array<itensor::MPO,3> M;
     std::array<itensor::MPO,3> M2;
     Hamiltonian H_Details;
     itensor::SiteSet sites;
     itensor::MPO H_flux;
 
+    private:
     double GSE;
     std::vector<std::array<double,2>> E;
     std::vector<std::array<double,2>> Cv;
@@ -126,7 +129,6 @@ class Kitaev_Model{
 
         
         this -> H0 = itensor::toMPO(this -> ampo);
-        this -> H2 = itensor::nmultMPO(H0,itensor::prime(H0));
         M = magnetization_operators(LX,LY,aux);
         for (int i = 0; i != M.size(); i++){
             M2[i] = itensor::nmultMPO(M[i],itensor::prime(M[i]));
@@ -160,7 +162,7 @@ class Kitaev_Model{
             save_data(xGSE,GSE);
         } 
         else {
-            std::string pathname = "mkdir " + x;
+            std::filesystem::create_directory(x);
             std::string xE = x + "/" + "E";
             std::string xC = x + "/" + "C";
             std::string xS = x + "/" + "S";
@@ -181,11 +183,12 @@ class Kitaev_Model{
     }
 
     
-    void DMRG(int Sweeps=10){
+    itensor::MPS DMRG(int Sweeps=10){
         Calc_Type = true;
         auto psi0 = itensor::randomMPS(sites,16);
         auto [energy, psi] = itensor::dmrg(H0,psi0,Sweeps,{"Quiet",true});
         GSE = energy;
+        return psi;
     }
 
 

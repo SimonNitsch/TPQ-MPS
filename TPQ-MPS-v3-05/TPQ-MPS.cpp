@@ -259,18 +259,18 @@ void Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_
             cb_old = 1;
         }
         cb += t_beta;
+        std::cout << cb <<  " " << cb_old << std::flush;
 
         double E = itensor::tdvp(psi,H0,t,Sweeps,args);
 
         std::complex<double> w = itensor::innerC(psi,H_flux,psi);
-        std::complex<double> e2 = itensor::innerC(psi,H2,psi);
-        double c = cb * cb * (std::real(e2) - E*E);
+        double c = cb * cb * (E_vec.back() - E) / t_beta;
         double s = S_vec.back() + t_beta * 0.5 * (c/cb + C_vec.back()/cb_old);
 
         for (int i = 0; i != Chi_vec.size(); i++){
             std::complex<double> m = itensor::innerC(psi,M[i],psi);
             double mr = std::real(m);
-            std::complex<double> m2 = itensor::innerC(psi,M2[i],psi);
+            std::complex<double> m2 = itensor::innerC(psi,M[i],M[i],psi);
             double m2r = std::real(m2);
             double chi = cb  * (m2r - mr*mr);
             Chi_vec[i].push_back(chi);

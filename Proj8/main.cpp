@@ -3,10 +3,10 @@
 #include <vector>
 #include "itensor/all.h"
 #include "TDVP/tdvp.h"
-#include "TPQ-MPS-v3-05/main.h"
+#include "TPQ-MPS-v3-07/main.h"
 #include <ios>
 
-
+#include <chrono>
 
 int main(){
     std::ios_base::sync_with_stdio(false);
@@ -20,16 +20,35 @@ int main(){
     int auxiliaries = 7;
 
     itensor::SpinHalf sites;
-    std::string filename = "EPaper";
+    std::string filename = "aaaaaaaaaa";
 
     int TimeSteps = 100;
     int Evols = 30;
     std::vector<double> intervals = {5,20,35,40};
-    int init_states = 256;
+    int init_states = 32;
+    int max_states = 128;
+
+    auto t = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::system_clock,std::chrono::duration<double>> tmin;
+    auto t0 = std::chrono::duration<double>(t-tmin);
+    long long t00 = static_cast<long long>(t0.count());
+    long long t000 = t00; //- (t00 / 10000) * 10000;
+    std::cout << t000 << "\n" << std::flush;
+    std::cout << t000/10000000 * 10000000 << std::flush;
 
 
-    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,sites,auxiliaries,"Honeycomb");
-    Model.Time_Evolution(TimeSteps,intervals,Evols,init_states);
+    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,sites,auxiliaries,"Honeycomb");    
+    //itensor::PrintData(Model.H2);
+    //itensor::PrintData(Model.H2);
+
+    try{
+        Model.Time_Evolution(TimeSteps,intervals,Evols,true,max_states,init_states,"OneSite");
+    }
+    catch(std::exception& e){
+        std::cout << e.what();
+    }
+    
+    
     Model.Save(filename);
 
 
