@@ -13,7 +13,7 @@ std::vector<double> operator-(double x, std::vector<double>& v){
 }
 
 
-namespace TPQ_MPS{
+namespace TPQ_MPS_old{
 
 
 std::array<int,3> Kitaev_Model::get_neighbour_data_hex(int LX, int LY, int pos){
@@ -345,9 +345,10 @@ void Kitaev_Model::save_data(std::string filename, T v){
 void Kitaev_Model::chi_int(itensor::MPS& psi, double n, double t, std::array<std::vector<double>,3>& chi_vec, double step, itensor::Sweeps& sweeps, itensor::Args& args){
     int steps = std::ceil(t);
     itensor::Cplx dt = t / static_cast<double>(steps) * itensor::Cplx_1;
+    auto appl_args = itensor::Args({"Cutoff=",1e-4,"MaxDim=",32});
 
     itensor::MPS sp;
-    sp = itensor::applyMPO(M[0],psi);
+    sp = itensor::applyMPO(M[0],psi,appl_args);
     itensor::println(sp);
     std::cout << 3333333 << "\n" << std::flush;
     std::complex<double> ss = itensor::innerC(sp,sp);

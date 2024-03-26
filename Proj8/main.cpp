@@ -4,6 +4,7 @@
 #include "itensor/all.h"
 #include "TDVP/tdvp.h"
 #include "TPQ-MPS-v3-07/main.h"
+#include "TPQ-MPS-v3-08/main.h"
 #include <ios>
 
 #include <chrono>
@@ -12,14 +13,18 @@ int main(){
     std::ios_base::sync_with_stdio(false);
     TPQ_MPS::Hamiltonian H_Details;
     H_Details.set("K",4./3.);
+    TPQ_MPS_old::Hamiltonian H_Details_old;
+    H_Details_old.set("K",4./3.);
     //H_Details.set("hz",0.15);
     //H_Details.set("J",1);
 
-    int LX = 8;
-    int LY = 6;
-    int auxiliaries = 7;
+    int LX = 4;
+    int LY = 2;
+    int auxiliaries = 2;
 
-    itensor::SpinHalf sites;
+    itensor::CustomSpin sites;
+    itensor::SpinHalf sites_old;
+    int spin = 1;
     std::string filename = "aaaaaaaaaa";
 
     int TimeSteps = 100;
@@ -37,12 +42,19 @@ int main(){
     std::cout << t000/10000000 * 10000000 << std::flush;
 
 
-    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,sites,auxiliaries,"Honeycomb");    
+    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,sites,spin,auxiliaries,"Honeycomb");
+    auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
     //itensor::PrintData(Model.H2);
+    itensor::PrintData(Model.H0);
 
+    for (int i = 0; i != 20; i++){
+        auto psi = itensor::randomMPS(sites);
+    }
+
+/*
     try{
-        Model.Time_Evolution(TimeSteps,intervals,Evols,true,max_states,init_states,"OneSite");
+        Model.Time_Evolution(TimeSteps,intervals,Evols,false,max_states,init_states,"OneSite");
     }
     catch(std::exception& e){
         std::cout << e.what();
@@ -50,7 +62,7 @@ int main(){
     
     
     Model.Save(filename);
-
+*/
 
 
 }
