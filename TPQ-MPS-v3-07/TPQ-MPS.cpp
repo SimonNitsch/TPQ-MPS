@@ -1,7 +1,7 @@
 #include "TPQ-MPS.h"
 #pragma once
 
-
+/*
 std::vector<double> operator-(double x, std::vector<double>& v){
     std::vector<double> vx;
     vx.reserve(v.size());
@@ -11,7 +11,7 @@ std::vector<double> operator-(double x, std::vector<double>& v){
     }
     return vx;
 }
-
+*/
 
 namespace TPQ_MPS_old{
 

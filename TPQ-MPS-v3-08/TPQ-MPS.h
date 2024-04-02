@@ -35,7 +35,7 @@ class Kitaev_Model{
     std::array<itensor::MPO,3> M;
     std::array<itensor::MPO,3> M2;
     Hamiltonian H_Details;
-    itensor::SiteSet sites;
+    itensor::CustomSpin sites;
     itensor::MPO H_flux;
 
     private:
@@ -91,13 +91,10 @@ class Kitaev_Model{
 
 
     public:
-    Kitaev_Model(int LX, int LY, Hamiltonian H_Details, itensor::CustomSpin& sites, int DoubleSpin, int aux, std::string shape){
-        sites = itensor::CustomSpin((LX*LY+2*aux),{"2S=",DoubleSpin,"ConserveQNs=",false});
-        auto ampo = itensor::AutoMPO(sites); 
-        
-        this -> ampo = ampo;
+    Kitaev_Model(int LX, int LY, Hamiltonian H_Details, int DoubleSpin, int aux, std::string shape){
+        this -> sites = itensor::CustomSpin((LX*LY+2*aux),{"2S=",DoubleSpin,"ConserveQNs=",false});
+        this -> ampo = itensor::AutoMPO(sites);
         this -> H_Details = H_Details;
-        this -> sites = sites;
 
         std::vector<int> full_points;
         if (shape == "Honeycomb"){

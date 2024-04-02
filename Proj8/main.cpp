@@ -3,11 +3,22 @@
 #include <vector>
 #include "itensor/all.h"
 #include "TDVP/tdvp.h"
-#include "TPQ-MPS-v3-07/main.h"
 #include "TPQ-MPS-v3-08/main.h"
+#include "TPQ-MPS-v3-07/main.h"
 #include <ios>
 
 #include <chrono>
+
+/*
+int main(){
+    auto sites = itensor::SpinHalf(10,{"ConserveQNs=",false});
+    auto a = itensor::randomMPS(sites,10);
+    itensor::PrintData(a);
+}
+*/
+
+
+
 
 int main(){
     std::ios_base::sync_with_stdio(false);
@@ -42,15 +53,30 @@ int main(){
     std::cout << t000/10000000 * 10000000 << std::flush;
 
 
-    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,sites,spin,auxiliaries,"Honeycomb");
+    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,"Honeycomb");
     auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
     //itensor::PrintData(Model.H2);
     itensor::PrintData(Model.H0);
+    itensor::PrintData(Model2.H0);
 
     for (int i = 0; i != 20; i++){
         auto psi = itensor::randomMPS(sites);
     }
+
+    auto test_sites_new = itensor::CustomSpin(2,{"2S=",1,"ConserveQNs=",false});
+    auto test_sites_old = itensor::SpinHalf(2,{"ConserveQNs=",false});
+    auto ampo_new = itensor::AutoMPO(test_sites_new);
+    auto ampo_old = itensor::AutoMPO(test_sites_old);
+
+    //ampo_new += "S-",1,"S+",2;
+    //ampo_old += "S+",1,"S-",2;
+    ampo_new += "Sz",1,"Sz",2;
+    ampo_old += "Sz",1,"Sz",2;
+
+    itensor::PrintData(itensor::toMPO(ampo_new));
+    itensor::PrintData(itensor::toMPO(ampo_old));
+
 
 /*
     try{
@@ -59,12 +85,11 @@ int main(){
     catch(std::exception& e){
         std::cout << e.what();
     }
+  */  
     
-    
-    Model.Save(filename);
-*/
+    //Model.Save(filename);
+
 
 
 }
-
 

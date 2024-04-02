@@ -2,17 +2,19 @@
     "tasks": [
         {
             "type": "cppbuild",
-            "label": "C/C++: g++ build active file",
-            "command": "/usr/bin/g++",
+            "label": "C/C++: clang++ build active file",
+            "command": "/usr/bin/clang++",
             "args": [
+                "-std=c++17",
                 "-fdiagnostics-color=always",
-                "-g",
+                "-fPIC",
                 "${file}",
                 "-o",
                 "${fileDirname}/${fileBasenameNoExtension}",
-                "-I/home/simon/Documents/TPQ-MPS",
-                "-I/home/simon/Programs/itensor",  // Add this line to include ITensor headers
-                "-L/home/simon/Programs/itensor/lib",      // Add this line to specify the ITensor library directory
+                "-I/Users/simon/Documents/TPQ-MPS",
+                "-I/Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers",
+                "-I/Users/simon/Documents/itensor",  // Add this line to include ITensor headers
+                "-L/Users/simon/Documents/itensor/lib",      // Add this line to specify the ITensor library directory
                 "-litensor",
                 "-llapack",
                 "-lblas"

@@ -110,6 +110,7 @@ def Plot(filename, filename2, intervals, particles, K=0):
         plt.plot(x,Dimerx(x,K),"c:")
         plt.plot(x,Dimerz(x,K),"m:")
         plt.xscale("log")
+        plt.ylim([0,20])
         plt.show()
         
 
@@ -124,7 +125,7 @@ Dimerx = lambda T, J : 1/J * np.tanh(J/4/T)
 
 if __name__=="__main__":
     
-    intervals = np.array([1,9,20,30,40,50,50,50,50,50,50,50,50])
+    intervals = np.array([1,9,25,25,40,50,50,50,50,50,50,50,50])
     particles = 48
     name = "S1/SecondTry/"
     name2 = "S1/08081one"
@@ -133,6 +134,35 @@ if __name__=="__main__":
     
     os.chdir("../SomeResults")    
     Plot(name,name2,intervals,particles,1.33)
+
+    plt.figure()
+
+    ymax = 6
+    xmax = 4
+
+    for i in range(ymax):
+        for j in range(xmax):
+            x = j * 2 * np.cos(np.pi/6) + np.ceil(i/2) * np.cos(np.pi/6)
+            y = np.ceil(i/2) * np.sin(np.pi/6) + np.floor(i/2)
+            plt.plot(x,y,"k.")
+
+            if i%2==1:
+                plt.plot([x,x-np.cos(np.pi/6)],[y,y-np.sin(np.pi/6)],"r")
+                if j!=(xmax-1):
+                    plt.plot([x,x+np.cos(np.pi/6)],[y,y-np.sin(np.pi/6)],"b")
+                if i!=(ymax-1):
+                    plt.plot([x,x],[y,y+1],"g")
+
+
+            if i==0 and j!=0:
+                plt.plot([x,x],[y,y-0.5],"g:")
+            if i==ymax-1 and j!=xmax-1:
+                plt.plot([x,x],[y,y+0.5],"g:")
+                
+                
+            
+    plt.axis("equal")
+    plt.show()
 
 
 '''
