@@ -3,166 +3,168 @@ import matplotlib.pyplot as plt
 import os
 
 
-
-def Plot(filename, filename2, intervals, particles, K=0):
-    x = []
-    sum_i = 0
-    YE = np.loadtxt(filename+"E.txt",delimiter=",")
-    G = np.loadtxt(filename2+"_GSE.txt") / particles
-    print(G)
     
-    interval_steps = int((YE.shape[0]-1) / intervals.shape[0])
-    print(interval_steps)
+intervals = np.array([1,9,25,25,25,25])
+particles = 4
+filename = "MiniControlLongSS1l/"
+filename2 = "Classic"
+K = 1.33
     
-    CS = True
-    W = True
-    Chi = True
-    try:
-        YC = np.loadtxt(filename+"C.txt",delimiter=",")
-        YS = np.loadtxt(filename+"S.txt",delimiter=",")
-    except:
-        CS = False
-    try:
-        YW = np.loadtxt(filename+"W.txt",delimiter=",")
-        yw = []
-    except:
-        W = False
-    try:
-        YCHIx = np.loadtxt(filename+"Chix.txt",delimiter=",")
-        YCHIy = np.loadtxt(filename+"Chiy.txt",delimiter=",")
-        YCHIz = np.loadtxt(filename+"Chiz.txt",delimiter=",")
-    except:
-        Chi = False
-        
-        
-              
-        
-    for i in range(intervals.size):
-        x.append(np.linspace(sum_i,sum_i+intervals[i],interval_steps,endpoint=False)**(-1))
-        sum_i += intervals[i]
-        
-    x.append(np.array([1/sum_i]))
-        
-
-    x = np.hstack(x)[1:]
-    xb = 1/x
-    ye = YE[1:,:] / particles
-    plt.figure()
-    plt.plot(x,ye[:,0],"b")
-    plt.plot([x[-1],x[0]],[G,G],"r--")
-    plt.legend(["Energy","Ground State Energy"])
-    plt.plot(x,ye[:,0]+ye[:,1],"b-.")
-    plt.plot(x,ye[:,0]-ye[:,1],"b-.")
-    plt.xscale("log")
-    plt.xlabel("T")
-    plt.show()
-    
-    Emin = np.min(ye[:,0])
-    sum = 0
-    for i in range(xb.size-1):
-        sum += (xb[i+1]-xb[i])/2 *(ye[i,0]+ye[i+1,0]-2*Emin)
-    print(sum)
-    
-    
-    
-    if CS:
-        yc = YC[1:,:] / particles
-        ys = YS[1:,:] / particles
-        ys[:,0] = np.max(ys[:,0]) - ys[:,0]
-        plt.figure()
-        plt.plot(x,yc[:,0],"r")
-        plt.plot(x,ys[:,0],"g")
-        plt.legend(["Heat Capacity", "Entropy Integral"])
-        plt.plot(x,yc[:,0]+yc[:,1],"r-.")
-        plt.plot(x,yc[:,0]-yc[:,1],"r-.")
-        plt.plot(x,ys[:,0]+ys[:,1],"g-.")
-        plt.plot(x,ys[:,0]-ys[:,1],"g-.")
-        plt.xscale("log")
-        plt.xlabel("T")
-        plt.show()
-        
-    if W:
-        yw = YW[1:,:]
-        plt.figure()
-        plt.plot(x,yw[:,0],"y")
-        plt.plot(x,yw[:,0]+yw[:,1],"y-.")
-        plt.plot(x,yw[:,0]-yw[:,1],"y-.")
-        plt.xscale("log")
-        plt.legend(["Plaquette Flux"])
-        plt.show()
-        
-    if Chi:
-        ycx = YCHIx[1:,:] / particles
-        ycy = YCHIy[1:,:] / particles
-        ycz = YCHIz[1:,:] / particles
-        plt.figure()
-        plt.plot(x,ycx[:,0],"c")
-        plt.plot(x,ycy[:,0],"y")
-        plt.plot(x,ycz[:,0],"m")
-        plt.legend([r"$\chi^x$", r"$\chi^y$", r"$\chi^z$"])
-        plt.plot(x,ycx[:,0]+ycx[:,1],"c-.")
-        plt.plot(x,ycx[:,0]-ycx[:,1],"c-.")
-        plt.plot(x,ycy[:,0]+ycy[:,1],"y-.")
-        plt.plot(x,ycy[:,0]-ycy[:,1],"y-.")
-        plt.plot(x,ycz[:,0]+ycz[:,1],"m-.")
-        plt.plot(x,ycz[:,0]-ycz[:,1],"m-.")
-        plt.plot(x,Curie(x,K),"k:")
-        plt.plot(x,Dimerx(x,K),"c:")
-        plt.plot(x,Dimerz(x,K),"m:")
-        plt.xscale("log")
-        plt.ylim([0,20])
-        plt.show()
-        
+os.chdir("../SomeResults")   
 
 
+
+
+
+
+x = []
+sum_i = 0
+YE = np.loadtxt(filename+"E.txt",delimiter=",")
+G = np.loadtxt(filename2+"_GSE.txt") / particles
+print(G)
 
 Curie = lambda T, J : 1 / (4*T + J)
 Dimerz = lambda T, J : 1/2/T * np.exp(J/4/T) / (np.exp(J/4/T) - np.exp(-J/4/T))
 Dimerx = lambda T, J : 1/J * np.tanh(J/4/T)
+    
+interval_steps = int((YE.shape[0]-1) / intervals.shape[0])
+print(interval_steps)
+    
+CS = True
+W = True
+Chi = True
+try:
+    YC = np.loadtxt(filename+"C.txt",delimiter=",")
+    YS = np.loadtxt(filename+"S.txt",delimiter=",")
+except:
+    CS = False
+try:
+    YW = np.loadtxt(filename+"W.txt",delimiter=",")
+    yw = []
+except:
+    W = False
+try:
+    YCHIx = np.loadtxt(filename+"Chix.txt",delimiter=",")
+    YCHIy = np.loadtxt(filename+"Chiy.txt",delimiter=",")
+    YCHIz = np.loadtxt(filename+"Chiz.txt",delimiter=",")
+except:
+    Chi = False
         
         
+              
+        
+for i in range(intervals.size):
+    x.append(np.linspace(sum_i,sum_i+intervals[i],interval_steps,endpoint=False)**(-1))
+    sum_i += intervals[i]
+        
+x.append(np.array([1/sum_i]))
+        
 
-
-if __name__=="__main__":
+x = np.hstack(x)[1:]
+xb = 1/x
+ye = YE[1:,:] / particles
+plt.figure()
+plt.plot(x,ye[:,0],"b")
+plt.plot([x[-1],x[0]],[G,G],"r--")
+plt.legend(["Energy","Ground State Energy"])
+plt.plot(x,ye[:,0]+ye[:,1],"b-.")
+plt.plot(x,ye[:,0]-ye[:,1],"b-.")
+plt.xscale("log")
+plt.xlabel("T")
+plt.show()
     
-    intervals = np.array([1,9,25,25,40,50,50,50,50,50,50,50,50])
-    particles = 48
-    name = "S1/SecondTry/"
-    name2 = "S1/08081one"
+Emin = np.min(ye[:,0])
+sum = 0
+for i in range(xb.size-1):
+    sum += (xb[i+1]-xb[i])/2 *(ye[i,0]+ye[i+1,0]-2*Emin)
+print(sum)
     
     
     
-    os.chdir("../SomeResults")    
-    Plot(name,name2,intervals,particles,1.33)
-
+if CS:
+    yc = YC[1:,:] / particles
+    ys = YS[1:,:] / particles
     plt.figure()
+    plt.plot(x,yc[:,0],"r")
+    plt.plot(x,ys[:,0],"g")
+    plt.legend(["Heat Capacity", "Entropy Integral"])
+    plt.plot(x,yc[:,0]+yc[:,1],"r-.")
+    plt.plot(x,yc[:,0]-yc[:,1],"r-.")
+    plt.plot(x,ys[:,0]+ys[:,1],"g-.")
+    plt.plot(x,ys[:,0]-ys[:,1],"g-.")
+    plt.xscale("log")
+    plt.xlabel("T")
+    plt.show()
+        
+if W:
+    yw = YW[1:,:]
+    plt.figure()
+    plt.plot(x,yw[:,0],"y")
+    plt.plot(x,yw[:,0]+yw[:,1],"y-.")
+    plt.plot(x,yw[:,0]-yw[:,1],"y-.")
+    plt.xscale("log")
+    plt.legend(["Plaquette Flux"])
+    plt.show()
+        
+if Chi:
+    ycx = YCHIx[1:,:] / particles
+    ycy = YCHIy[1:,:] / particles
+    ycz = YCHIz[1:,:] / particles
+    plt.figure()
+    plt.plot(x,ycx[:,0],"c")
+    plt.plot(x,ycy[:,0],"y")
+    plt.plot(x,ycz[:,0],"m")
+    plt.legend([r"$\chi^x$", r"$\chi^y$", r"$\chi^z$"])
+    plt.plot(x,ycx[:,0]+ycx[:,1],"c-.")
+    plt.plot(x,ycx[:,0]-ycx[:,1],"c-.")
+    plt.plot(x,ycy[:,0]+ycy[:,1],"y-.")
+    plt.plot(x,ycy[:,0]-ycy[:,1],"y-.")
+    plt.plot(x,ycz[:,0]+ycz[:,1],"m-.")
+    plt.plot(x,ycz[:,0]-ycz[:,1],"m-.")
+    plt.plot(x,Curie(x,K),"k:")
+    plt.plot(x,Dimerx(x,K),"c:")
+    plt.plot(x,Dimerz(x,K),"m:")
+    plt.xscale("log")
+    plt.ylim([0,20])
+    plt.show()
+        
 
-    ymax = 6
-    xmax = 4
-
-    for i in range(ymax):
-        for j in range(xmax):
-            x = j * 2 * np.cos(np.pi/6) + np.ceil(i/2) * np.cos(np.pi/6)
-            y = np.ceil(i/2) * np.sin(np.pi/6) + np.floor(i/2)
-            plt.plot(x,y,"k.")
-
-            if i%2==1:
-                plt.plot([x,x-np.cos(np.pi/6)],[y,y-np.sin(np.pi/6)],"r")
-                if j!=(xmax-1):
-                    plt.plot([x,x+np.cos(np.pi/6)],[y,y-np.sin(np.pi/6)],"b")
-                if i!=(ymax-1):
-                    plt.plot([x,x],[y,y+1],"g")
 
 
-            if i==0 and j!=0:
-                plt.plot([x,x],[y,y-0.5],"g:")
-            if i==ymax-1 and j!=xmax-1:
-                plt.plot([x,x],[y,y+0.5],"g:")
+
+        
+        
+ 
+
+
+plt.figure()
+
+ymax = 6
+xmax = 4
+
+for i in range(ymax):
+    for j in range(xmax):
+        xh = j * 2 * np.cos(np.pi/6) + np.ceil(i/2) * np.cos(np.pi/6)
+        yh = np.ceil(i/2) * np.sin(np.pi/6) + np.floor(i/2)
+        plt.plot(xh,yh,"k.")
+
+        if i%2==1:
+            plt.plot([xh,xh-np.cos(np.pi/6)],[yh,yh-np.sin(np.pi/6)],"r")
+            if j!=(xmax-1):
+                plt.plot([xh,xh+np.cos(np.pi/6)],[yh,yh-np.sin(np.pi/6)],"b")
+            if i!=(ymax-1):
+                plt.plot([xh,xh],[yh,yh+1],"g")
+
+
+        if i==0 and j!=0:
+            plt.plot([xh,xh],[yh,yh-0.5],"g:")
+        if i==ymax-1 and j!=xmax-1:
+            plt.plot([xh,xh],[yh,yh+0.5],"g:")
                 
                 
             
-    plt.axis("equal")
-    plt.show()
+plt.axis("equal")
+plt.show()
 
 
 '''

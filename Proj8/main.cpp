@@ -3,10 +3,9 @@
 #include <vector>
 #include "itensor/all.h"
 #include "TDVP/tdvp.h"
-#include "TPQ-MPS-v3-08/main.h"
+#include "TPQ-MPS-v3-09/main.h"
 #include "TPQ-MPS-v3-07/main.h"
 #include <ios>
-
 #include <chrono>
 
 /*
@@ -29,8 +28,8 @@ int main(){
     //H_Details.set("hz",0.15);
     //H_Details.set("J",1);
 
-    int LX = 4;
-    int LY = 2;
+    int LX = 6;
+    int LY = 6;
     int auxiliaries = 2;
 
     itensor::CustomSpin sites;
@@ -57,25 +56,10 @@ int main(){
     auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
     //itensor::PrintData(Model.H2);
-    itensor::PrintData(Model.H0);
-    itensor::PrintData(Model2.H0);
+    itensor::PrintData(Model.H_flux);
+    itensor::PrintData(Model2.H_flux);
 
-    for (int i = 0; i != 20; i++){
-        auto psi = itensor::randomMPS(sites);
-    }
 
-    auto test_sites_new = itensor::CustomSpin(2,{"2S=",1,"ConserveQNs=",false});
-    auto test_sites_old = itensor::SpinHalf(2,{"ConserveQNs=",false});
-    auto ampo_new = itensor::AutoMPO(test_sites_new);
-    auto ampo_old = itensor::AutoMPO(test_sites_old);
-
-    //ampo_new += "S-",1,"S+",2;
-    //ampo_old += "S+",1,"S-",2;
-    ampo_new += "Sz",1,"Sz",2;
-    ampo_old += "Sz",1,"Sz",2;
-
-    itensor::PrintData(itensor::toMPO(ampo_new));
-    itensor::PrintData(itensor::toMPO(ampo_old));
 
 
 /*

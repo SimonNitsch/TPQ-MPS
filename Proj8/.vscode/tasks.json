@@ -14,10 +14,11 @@
                 "-I/Users/simon/Documents/TPQ-MPS",
                 "-I/Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers",
                 "-I/Users/simon/Documents/itensor",  // Add this line to include ITensor headers
+                "-I/Users/simon/Documents/eigen-3.4.0",
                 "-L/Users/simon/Documents/itensor/lib",      // Add this line to specify the ITensor library directory
                 "-litensor",
                 "-llapack",
-                "-lblas"
+                "-lblas",
             ],
             "options": {
                 "cwd": "${fileDirname}"
