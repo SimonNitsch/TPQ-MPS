@@ -1,9 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-txtname = "Case4882.txt"
+txtname = "Case4874.txt"
 foldername = "/Users/simon/Documents/TPQ-MPS/SomeResults/ExactEnergies/"
-particles = 4
+particles = 12
 
 
 filename = foldername + txtname

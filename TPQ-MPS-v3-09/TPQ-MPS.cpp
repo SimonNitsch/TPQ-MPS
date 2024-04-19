@@ -211,10 +211,12 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
             fluxop += Wfac,"Sx",f,"Sy",f+1,"Sz",f+2,"Sx",f+LY+1,"Sy",f+LY,"Sz",f+LY-1;
         }
     }
+    itensor::PrintData(fluxop);
     auto fluxH = itensor::toMPO(fluxop);
     return fluxH;
 }
 */
+
 
 
 itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
@@ -231,6 +233,7 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
             fluxop += Wfac,"Expx",f,"Expy",f+1,"Expz",f+2,"Expx",f+LY+1,"Expy",f+LY,"Expz",f+LY-1;
         }
     }    
+    itensor::PrintData(fluxop);
     auto fluxH = itensor::toMPO(fluxop);
     return fluxH;
 }
@@ -471,7 +474,7 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
     }
     auto t0 = std::chrono::system_clock::now();
     
-
+    std::cout << "\n\n";
     for (int i = 0; i != Evols; i++){
         double curr_beta = 0;
         auto t1 = std::chrono::system_clock::now();
@@ -529,7 +532,8 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
     auto hours = std::chrono::duration_cast<std::chrono::hours>(time_total);
     auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time_total-hours);
     auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time_total-hours-minutes);
-    std::cout << "Finished Imaginary Time Evolution, Time Needed: " << hours.count() << " Hours, " << minutes.count() << " Minutes, " << seconds.count() << " Seconds\n" << std::flush;
+    std::cout << "\n\n";
+    std::cout << "Finished Imaginary Time Evolution, Time Needed: " << hours.count() << " Hours, " << minutes.count() << " Minutes, " << seconds.count() << " Seconds\n\n" << std::flush;
 }
 
 

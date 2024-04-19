@@ -28,7 +28,7 @@ int main(){
     //H_Details.set("hz",0.15);
     //H_Details.set("J",1);
 
-    int LX = 6;
+    int LX = 4;
     int LY = 6;
     int auxiliaries = 2;
 
@@ -50,6 +50,7 @@ int main(){
     long long t000 = t00; //- (t00 / 10000) * 10000;
     std::cout << t000 << "\n" << std::flush;
     std::cout << t000/10000000 * 10000000 << std::flush;
+    
 
 
     auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,"Honeycomb");

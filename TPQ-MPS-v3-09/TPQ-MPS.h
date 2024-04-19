@@ -137,19 +137,20 @@ class Kitaev_Model{
 
         this -> H_flux = honeycomb_flux_operator(LX,LY,aux);
 
+        //itensor::PrintData(H_flux);
         
         this -> H0 = itensor::toMPO(this -> ampo);
-        auto Ms = magnetization_operators(LX,LY,aux);
-        M = Ms[0];
-        M2 = Ms[1];
+        //auto Ms = magnetization_operators(LX,LY,aux);
+        //M = Ms[0];
+        //M2 = Ms[1];
 
-        std::cout << "Spin Type: " << typeid(sites).name() << "\n";
+        std::cout << "Spin " << DoubleSpin << "/2 System" << "\n";
         std::cout << "Lattice Type: " << shape << "\n";
         std::cout << "LX = " << LX << ", LY = " << LY << "\n";
         std::cout << "Auxiliary Sites: " << aux << "\n\n";
         std::cout << "Hamiltonian Parameters \n";
         this->H_Details.print();
-        std::cout << "\n";
+        std::cout << "\n\n";
 
 
         

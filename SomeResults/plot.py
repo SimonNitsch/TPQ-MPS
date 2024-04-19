@@ -5,8 +5,8 @@ import os
 
     
 intervals = np.array([1,9,25,25,25,25])
-particles = 4
-filename = "MiniControlLongSS1l/"
+particles = 12
+filename = "MiniControlLong/"
 filename2 = "Classic"
 K = 1.33
     
