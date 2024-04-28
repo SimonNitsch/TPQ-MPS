@@ -5,8 +5,8 @@ import os
 
     
 intervals = np.array([1,9,25,25,25,25])
-particles = 12
-filename = "MiniControlLong/"
+particles = 4
+filename = "MiniControlLongS15l/"
 filename2 = "Classic"
 K = 1.33
     
@@ -137,7 +137,7 @@ if Chi:
  
 
 
-plt.figure()
+plt.figure(figsize=[10,10])
 
 ymax = 6
 xmax = 4
@@ -146,7 +146,6 @@ for i in range(ymax):
     for j in range(xmax):
         xh = j * 2 * np.cos(np.pi/6) + np.ceil(i/2) * np.cos(np.pi/6)
         yh = np.ceil(i/2) * np.sin(np.pi/6) + np.floor(i/2)
-        plt.plot(xh,yh,"k.")
 
         if i%2==1:
             plt.plot([xh,xh-np.cos(np.pi/6)],[yh,yh-np.sin(np.pi/6)],"r")
@@ -160,11 +159,28 @@ for i in range(ymax):
             plt.plot([xh,xh],[yh,yh-0.5],"g:")
         if i==ymax-1 and j!=xmax-1:
             plt.plot([xh,xh],[yh,yh+0.5],"g:")
-                
+        if i==0 and j ==0:
+            plt.plot([xh,xh-0.5],[yh,yh],"r:")
+        if i==ymax-1 and j==xmax-1:
+            plt.plot([xh,xh+0.5],[yh,yh],"r:")
+
+for i in range(ymax):
+    for j in range(xmax):
+        xh = j * 2 * np.cos(np.pi/6) + np.ceil(i/2) * np.cos(np.pi/6)
+        yh = np.ceil(i/2) * np.sin(np.pi/6) + np.floor(i/2)
+        plt.plot(xh,yh,"k.")
                 
             
 plt.axis("equal")
 plt.show()
+
+
+
+plt.figure(figsize=[10,10])
+
+ymax = 6
+xmax = 4
+
 
 
 '''
