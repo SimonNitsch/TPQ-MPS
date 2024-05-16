@@ -17,123 +17,8 @@ This header file should replace itensor/itensor/mps/sites/customspin.h
 
 #include "itensor/mps/siteset.h"
 #include <vector>
-
-
-itensor::Cplx operator*(std::vector<itensor::Cplx>& a, std::vector<itensor::Cplx>& b){
-    itensor::Cplx c = 0;
-    for (int i = 0; i != a.size(); i++){
-        c += a[i] * b[i];
-    }
-    return c;
-}
-
-
-
-std::vector<std::vector<itensor::Cplx>> operator*(std::vector<std::vector<itensor::Cplx>>& a, std::vector<std::vector<itensor::Cplx>>& b){
-    std::vector<std::vector<itensor::Cplx>> c;
-    std::vector<itensor::Cplx> c_vec;
-    std::vector<itensor::Cplx> a_vec;
-            std::vector<itensor::Cplx> b_vec;
-    int m = a.size();
-    int n = a[0].size();
-    c.reserve(m);
-    c_vec.reserve(n);
-    a_vec.reserve(m);
-    b_vec.reserve(m);
-    
-
-    for (int i = 0; i != m; i++){
-        for (int j = 0; j != n; j++){
-            a_vec = a[i];
-            for (int k = 0; k != m; k++){
-                b_vec.push_back(b[j][k]);
-            }
-            itensor::Cplx cc = a_vec * b_vec;
-            c_vec.push_back(cc);
-        }
-        c.push_back(c_vec);
-        a_vec.clear();
-        b_vec.clear();
-        c_vec.clear();
-    }
-    return c;
-    
-}
-
-
-
-
-
-std::vector<std::vector<itensor::Cplx>> operator+(std::vector<std::vector<itensor::Cplx>>& a, std::vector<std::vector<itensor::Cplx>>& b){
-    
-    std::vector<std::vector<itensor::Cplx>> c;
-    std::vector<itensor::Cplx> c_vec;
-    c.reserve(a.size());
-    c_vec.reserve(a[0].size());
-
-    for (int i = 0; i != a.size(); i++){
-        for (int j = 0; j != a[0].size(); j++){
-            c_vec.push_back(a[i][j] + b[i][j]);
-        }
-        c.push_back(c_vec);
-        c_vec.clear();
-    }
-    return c;
-}
-
-
-std::vector<std::vector<itensor::Cplx>> operator/(std::vector<std::vector<itensor::Cplx>>& a, itensor::Cplx b){
-    std::vector<std::vector<itensor::Cplx>> c;
-    std::vector<itensor::Cplx> c_vec;
-    c.reserve(a.size());
-    c_vec.reserve(a[0].size());
-
-    for (auto& i : a){
-        for (auto& j : i){
-            itensor::Cplx cc = j / b;
-            c_vec.push_back(cc);
-        }
-        c.push_back(c_vec);
-        c_vec.clear();
-    }
-    return c;
-}
-
-
-std::vector<std::vector<itensor::Cplx>> eyemat(int dims){
-    std::vector<std::vector<itensor::Cplx>> e;
-    std::vector<itensor::Cplx> e_vec;
-    e.reserve(dims);
-    e_vec.reserve(dims);
-
-    for (int i = 0; i != dims; i++){
-        e_vec = std::vector<itensor::Cplx>(dims);
-        e_vec[i] = 1;
-        e.push_back(e_vec);
-    } 
-
-    return e;
-}
-
-
-std::vector<std::vector<itensor::Cplx>> matexp(std::vector<std::vector<itensor::Cplx>>& A, int loops=10){
-    int dims = A.size();
-    auto res = eyemat(dims);
-    auto cur = eyemat(dims);
-
-    for (int i = 1; i != loops+1; i++){
-        cur = cur * A;
-        cur = cur / i;
-        res = res + cur;
-    }
-    
-    return res;
-}
-
-
-
-
-
+#include "Eigen/Dense"
+#include "unsupported/Eigen/MatrixFunctions"
 
 
 
@@ -154,23 +39,12 @@ class CustomSpinNitschSite
     static std::array<std::vector<std::vector<Cplx>>,3> SpinExp;
 
 
-    
     static std::array<std::vector<std::vector<Cplx>>,3> ExpMatrix(int DoubleSpin){
         int dims = DoubleSpin + 1;
-        std::vector<std::vector<Cplx>> Sx;
-        std::vector<std::vector<Cplx>> Sy;
-        std::vector<std::vector<Cplx>> Sz;
-        Sx.reserve(dims);
-        Sy.reserve(dims);
-        Sz.reserve(dims);
-        std::vector<Cplx> svec(dims);
-        for (int i = 0; i != dims; i++){
-            Sx.push_back(svec);
-            Sy.push_back(svec);
-            Sz.push_back(svec);
-        }
-
         double DSdouble = static_cast<double>(DoubleSpin);
+        Eigen::MatrixX<Cplx> Sx = Eigen::MatrixX<Cplx>::Zero(dims,dims);
+        Eigen::MatrixX<Cplx> Sy = Eigen::MatrixX<Cplx>::Zero(dims,dims);
+        Eigen::MatrixX<Cplx> Sz = Eigen::MatrixX<Cplx>::Zero(dims,dims);
 
         for (int i = 0; i != dims-1; i++){
             double sz = static_cast<double>(i) - DSdouble / 2.; 
@@ -179,32 +53,37 @@ class CustomSpinNitschSite
             Cplx X = f/2. * Cplx_1;
             Cplx Y = -f/2. * Cplx_i;
 
-            Sx[i+1][i] = X * M_PI * Cplx_i;
-            Sx[i][i+1] = X * M_PI * Cplx_i;
-            Sy[i+1][i] = Y * M_PI * Cplx_i;
-            Sy[i][i+1] = -Y * M_PI * Cplx_i;
+            Sx(i+1,i) = X * M_PI * Cplx_i;
+            Sx(i,i+1) = X * M_PI * Cplx_i;
+            Sy(i+1,i) = Y * M_PI * Cplx_i;
+            Sy(i,i+1) = -Y * M_PI * Cplx_i;
         }
-      
         for (int i = 0; i != dims; i++){
             double sz = static_cast<double>(i) - DSdouble / 2.;
-            Sz[i][i] = sz * M_PI * Cplx_i;
+            Sz(i,i) = sz * M_PI * Cplx_i;
         }
+        std::array<Eigen::MatrixX<Cplx>,3> ExpEig;
+        ExpEig[0] = Sx.exp();
+        ExpEig[1] = Sy.exp();
+        ExpEig[2] = Sz.exp();
 
-        auto expx = matexp(Sx);
-        auto expy = matexp(Sy);
-        auto expz = matexp(Sz);
-        for (auto& i : expx){
-            for (auto& j : i){
-                std::cout << j << " ";
+        std::array<std::vector<std::vector<Cplx>>,3> ExpVec;
+        for (int i = 0; i < 3; i++) {
+            ExpVec[i].resize(dims);
+            for (int j = 0; j < dims; j++) {
+                ExpVec[i][j].resize(dims);
             }
-            std::cout << "\n" << std::flush;
         }
+        for (int i = 0; i != 3; i++){
+            for (int j = 0; j != dims; j++){
+                for (int k = 0; k != dims; k++){
+                    ExpVec[i][j][k] = ExpEig[i](j,k);
+                }
+            }
+        }     
 
-
-        std::array<std::vector<std::vector<Cplx>>,3> result = {expx,expy,expz};
-            
-        return result;
-        }
+        return ExpVec;
+    }
 
         
 
@@ -305,6 +184,7 @@ class CustomSpinNitschSite
                 auto sz = -DSmax/2.0+i-1;
                 Op.set(s(i),sP(i),sz);
                 }
+            std::cout << "Sz: \n";
             }
         else
         if(opname == "S+")
@@ -325,12 +205,11 @@ class CustomSpinNitschSite
                 }
             }
 
-/*
 
-Changes to CustomSpinNitsch by Simon Nitsch
-Adding Sx and Sy Operator
 
-*/
+
+
+
 
 
 	
@@ -342,74 +221,65 @@ Adding Sx and Sy Operator
 		Op.set(s(i),sP(i+1),0.5*std::sqrt((DSmax/2.0-sz)*(DSmax/2.0+sz+1.0)));
 		}
 	    for(int i = 2; i <= dim(s); ++i)
-                {
-                auto sz = -DSmax/2.0+i-1;
-                Op.set(s(i),sP(i-1),0.5*std::sqrt((DSmax/2.0+sz)*(DSmax/2.0-sz+1.0)));
-                }
+            {
+            auto sz = -DSmax/2.0+i-1;
+            Op.set(s(i),sP(i-1),0.5*std::sqrt((DSmax/2.0+sz)*(DSmax/2.0-sz+1.0)));
+            }
+        std::cout << "Sx: \n";
 	    }
 	else
 	if(opname == "Sy"){
 	    for(int i = 1; i <= dim(s)-1; ++i)
-                {
-                auto sz = -DSmax/2.0+i-1;
-                Op.set(s(i),sP(i+1),-0.5*std::sqrt((DSmax/2.0-sz)*(DSmax/2.0+sz+1.0))*Cplx_i);
-                }
-            for(int i = 2; i <= dim(s); ++i)
-                {
-                auto sz = -DSmax/2.0+i-1;
-                Op.set(s(i),sP(i-1),0.5*std::sqrt((DSmax/2.0+sz)*(DSmax/2.0-sz+1.0))*Cplx_i);
-                }
+            {
+            auto sz = -DSmax/2.0+i-1;
+            Op.set(s(i),sP(i+1),-0.5*std::sqrt((DSmax/2.0-sz)*(DSmax/2.0+sz+1.0))*Cplx_i);
+            }
+        for(int i = 2; i <= dim(s); ++i)
+            {
+            auto sz = -DSmax/2.0+i-1;
+            Op.set(s(i),sP(i-1),0.5*std::sqrt((DSmax/2.0+sz)*(DSmax/2.0-sz+1.0))*Cplx_i);
+            }
+        std::cout << "Sy: \n";
 	    }
     else
     if(opname == "Expx"){
         auto ExMat = SpinExp[0];
         for (int i = 0; i != dim(s); i++){
             for (int j = 0; j != dim(s); j++){
-                std::complex<double> Ex = ExMat[i][j];
-                PrintData(s);
-
-                if (std::abs(Ex) > 1e-6){
-                    Op.set(s(j),sP(i),Ex*Cplx_1);
-                }
+                Cplx Ex = ExMat[i][j];
+                Op.set(s(j+1),sP(i+1),Ex);
             }
         }
+        std::cout << "Expx: \n";
     }
     else
     if(opname == "Expy"){
         auto ExMat= SpinExp[1];
         for (int i = 0; i != dim(s); i++){
             for (int j = 0; j != dim(s); j++){
-                std::complex<double> Ex = ExMat[i][j];
-                PrintData(s);
-
-                if (std::abs(Ex) > 1e-6){
-                    Op.set(s(j),sP(i),Ex*Cplx_1);
-                }
+                Cplx Ex = ExMat[i][j];
+                Op.set(s(j+1),sP(i+1),Ex);
             }
         }
+        std::cout << "Expy: \n";
     }
     else
     if(opname == "Expz"){
-        auto ExMat= SpinExp[2];
+        auto ExMat = SpinExp[2];
         for (int i = 0; i != dim(s); i++){
             for (int j = 0; j != dim(s); j++){
-                std::complex<double> Ex = ExMat[i][j];
-                PrintData(s);
-
-                if (std::abs(Ex) > 1e-6){
-                    Op.set(s(j),sP(i),Ex*Cplx_1);
-                }
+                Cplx Ex = ExMat[i][j];
+                Op.set(s(j+1),sP(i+1),Ex);        
             }
         }
+        std::cout << "Expz \n";
     }
 
 	
 
-/*
 
-End of Changes
 
-*/
+
 	
 	else
         if(opname == "U+")
@@ -440,6 +310,7 @@ End of Changes
             {
             throw ITError("Operator " + opname + " name not recognized");
             }
+        PrintData(Op);
 
         return Op;
         }

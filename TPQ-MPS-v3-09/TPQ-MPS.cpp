@@ -223,13 +223,11 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
     int Py = std::max((LY/2)-1,0);
     int Px = LX-1;
     auto fluxop = itensor::AutoMPO(sites);
-    double Wfac = 64. / static_cast<double>(Px) / static_cast<double>(Py);
+    double Wfac = 1. / static_cast<double>(Px) / static_cast<double>(Py);
 
     for (int i = 0; i != Px; i++){
         for (int j = 0; j != Py; j++){
             int f = LY*i + 2*j + 2 + aux;
-            std::cout << i << " " << j << "\n" << std::flush;
-            std::cout << f << " " << f+1 << " " << f+2 << " " << f+LY+1 << " " << f+LY << " " << f+LY-1 << "\n" << std::flush;
             fluxop += Wfac,"Expx",f,"Expy",f+1,"Expz",f+2,"Expx",f+LY+1,"Expy",f+LY,"Expz",f+LY-1;
         }
     }    
