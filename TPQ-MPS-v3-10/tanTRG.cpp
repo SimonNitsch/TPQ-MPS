@@ -2,17 +2,6 @@
 #pragma once
 
 
-std::vector<double> operator-(double x, std::vector<double>& v){
-    std::vector<double> vx;
-    vx.reserve(v.size());
-    
-    for (auto& i : v){
-        vx.push_back(x-i);
-    }
-    return vx;
-}
-
-
 
 using namespace itensor;
 namespace TPQ_MPS{
@@ -201,7 +190,7 @@ MPS Kitaev_Model::mps_to_tanmps(MPS& X){
 }
 
 
-double Kitaev_Model::tan_energy(MPS& Hexptan, MPO& Htan, int states=25, int statesdim=64){
+double Kitaev_Model::tan_energy(MPS& Hexptan, MPO& Htan, int states, int statesdim){
     double Eprop = 0;
     for (int j = 0; j != states; j++){
         auto ranpsi = randomMPS(sites,statesdim);
@@ -218,7 +207,7 @@ double Kitaev_Model::tan_energy(MPS& Hexptan, MPO& Htan, int states=25, int stat
 void Kitaev_Model::tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan, Sweeps& sweeps, Args& tdvp_args, std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, MPO& Hfluxtan, double& cb){
 
     for (int i = 0; i != steps; i++){
-        Hexptan = tdvp(Hexptan,H0tan,-1.*dt*Cplx_1,sweeps,tdvp_args);
+        auto stupid_result = tdvp(Hexptan,H0tan,-1.*dt*Cplx_1,sweeps,tdvp_args);
 
         cb += dt;
         double current_energy = tan_energy(Hexptan,H0tan);

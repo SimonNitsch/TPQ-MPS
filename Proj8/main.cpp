@@ -2,8 +2,7 @@
 #include <array>
 #include <vector>
 #include "itensor/all.h"
-#include "TDVP/tdvp.h"
-#include "TPQ-MPS-v3-10/main.h"
+#include "TPQ-MPS-v3-11/main.h"
 #include "TPQ-MPS-v3-07/main.h"
 #include <ios>
 #include <chrono>
@@ -69,8 +68,8 @@ int main(){
     
 
 
-    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,"Honeycomb");
-    auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
+    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,"Triangular");
+    //auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
     //itensor::PrintData(Model.H2);
     //itensor::PrintData(Model.H_flux);
@@ -102,6 +101,7 @@ int main(){
     itensor::PrintData(itensor::siteInds(psi3,2));
     */
 
+    /*
     auto Hexp = itensor::toExpH(Model.ampo,-1);
     itensor::println(Hexp);
     itensor::println(Model.H0);
@@ -116,9 +116,18 @@ int main(){
         std::cout << itensor::innerC(rmps,Hexp,Model.H0,rmps) << " " << std::flush;
         std::cout << itensor::innerC(Hmpstan,H0tan,rmpstan) << "\n" << std::flush;
     }
+    */
 
+    auto Flux12 = Model.honeycomb_flux_operator_half(LX,LY,auxiliaries);
+    auto Fluxex = Model.honeycomb_flux_operator(LX,LY,auxiliaries);
+    auto Hexp = itensor::toExpH(Model.ampo,itensor::Cplx_1);
 
+    for (int i = 0; i != 50; i++){
+        auto rmps = itensor::randomMPS(Model.sites,64);
 
+        std::cout << itensor::innerC(rmps,Flux12,Hexp,rmps) << " ";
+        std::cout << itensor::innerC(rmps,Fluxex,Hexp,rmps) << "\n";
+    }
 
 
 

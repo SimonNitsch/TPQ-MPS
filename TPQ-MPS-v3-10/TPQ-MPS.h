@@ -19,6 +19,17 @@
 #pragma once
 
 
+std::vector<double> operator-(double x, std::vector<double>& v){
+    std::vector<double> vx;
+    vx.reserve(v.size());
+    
+    for (auto& i : v){
+        vx.push_back(x-i);
+    }
+    return vx;
+}
+
+
 using namespace itensor;
 namespace TPQ_MPS{
 

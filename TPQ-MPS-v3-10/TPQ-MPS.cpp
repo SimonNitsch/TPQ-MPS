@@ -2,16 +2,6 @@
 #pragma once
 
 
-std::vector<double> operator-(double x, std::vector<double>& v){
-    std::vector<double> vx;
-    vx.reserve(v.size());
-    
-    for (auto& i : v){
-        vx.push_back(x-i);
-    }
-    return vx;
-}
-
 
 namespace TPQ_MPS{
 
@@ -62,7 +52,7 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_hex_periodic(int LX, int LY, 
 std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int LX, int LY, int pos){
     int X = (pos-1) / LY;
     int Y = (pos-1) % LY;
-    std::array<int,3> neighbours;
+    std::array<int,3> neighbours{};
 
     if (X != (LX-1)){
         neighbours[0] = pos + LY;
@@ -73,6 +63,16 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int LX, int LY, int pos){
             neighbours[2] = pos + LY - 1;
         }
     }
+    else{
+        neighbours[0] = pos - (LX-1) * LY;
+        if (Y == 0){
+            neighbours[2] = pos - (LX-2) * LY - 1;
+        }
+        else{
+            neighbours[2] = pos - (LX-1) * LY - 1;
+        }
+    }
+    
     if (Y == (LY-1)){
         neighbours[1] = pos + 1 - LY;
     }

@@ -6,7 +6,7 @@ import os
     
 intervals = np.array([1,9,25,25,25,25])
 particles = 12
-filename = "SecondControlXS/"
+filename = "NewControl/HeisenbergCheck3/"
 filename2 = "Classic"
 K = 1.33
     
