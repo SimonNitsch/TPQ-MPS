@@ -4,9 +4,9 @@ import os
 
 
     
-intervals = np.array([1,9,25,25,25,25])
-particles = 12
-filename = "NewControl/HeisenbergCheck3/"
+intervals = np.array([1,9,25,25,25,25,40,50,50,50,50,50,100])
+particles = 24
+filename = "MagnetTest/Dataproto/"
 filename2 = "Classic"
 K = 1.33
     
@@ -139,8 +139,8 @@ if Chi:
 
 plt.figure(figsize=[10,10])
 
-ymax = 6
-xmax = 4
+ymax = 4
+xmax = 2
 
 for i in range(ymax):
     for j in range(xmax):
@@ -155,14 +155,18 @@ for i in range(ymax):
                 plt.plot([xh,xh],[yh,yh+1],"g")
 
 
-        if i==0 and j!=0:
+        if i==0:
             plt.plot([xh,xh],[yh,yh-0.5],"g:")
-        if i==ymax-1 and j!=xmax-1:
+        if i==ymax-1:
             plt.plot([xh,xh],[yh,yh+0.5],"g:")
         if i==0 and j ==0:
-            plt.plot([xh,xh-0.5],[yh,yh],"r:")
+            plt.plot([xh,xh-0.5],[yh,yh],"k:")
         if i==ymax-1 and j==xmax-1:
-            plt.plot([xh,xh+0.5],[yh,yh],"r:")
+            plt.plot([xh,xh+0.5],[yh,yh],"k:")
+        if j==0 and i%2==0:
+            plt.plot([xh,xh-0.5*np.cos(np.pi/6)],[yh,yh+0.5*np.sin(np.pi/6)],"b:")
+        if j==xmax-1 and i%2==1:
+            plt.plot([xh,xh+0.5*np.cos(np.pi/6)],[yh,yh-0.5*np.sin(np.pi/6)],"b:")
 
 for i in range(ymax):
     for j in range(xmax):

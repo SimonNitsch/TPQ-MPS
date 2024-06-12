@@ -49,6 +49,59 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_hex_periodic(int LX, int LY, 
 
 } 
 
+
+std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev(int LX, int LY, int pos){
+    int Y = (pos-1) % LY;
+    int X = (pos-1) / LY;
+    std::array<int,3> neighbours{};
+
+    if (X != LX-1){
+        neighbours[0] = pos+LY+1;
+    }
+    else{
+        neighbours[0] = pos-(LX-1)*LY+1;
+    }
+
+    neighbours[1] = pos+1;
+
+    if (Y != 0){
+        neighbours[2] = pos-1;
+    }
+    else{
+        neighbours[2] = pos+LY-1;
+    }
+    return neighbours;
+
+}
+
+
+std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev2(int LX, int LY, int pos){
+    int Y = LY - 1 - (pos-1) % LY;
+    int X = (pos-1) / LY;
+    std::array<int,3> neighbours{};
+
+    neighbours[0] = pos+1;
+
+    if (X != 0){
+        neighbours[1] = pos-LY+1;
+    }
+    else {
+        neighbours[1] = pos+(LX-1)*LY+1;
+    }  
+    if (Y != 0){
+        neighbours[2] = pos-1;
+    }
+    else {
+        neighbours[2] = pos+LY-1;
+    } 
+    return neighbours;
+
+}
+
+
+
+
+
 std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int LX, int LY, int pos){
     int X = (pos-1) / LY;
     int Y = (pos-1) % LY;
@@ -250,17 +303,17 @@ std::array<std::array<itensor::MPO,3>,2> Kitaev_Model::magnetization_operators(i
         mx += "Sx",i;
         my += "Sy",i;
         mz += "Sz",i;
-
         for (int j = aux+1; j <= LX*LY+aux; j++){
-            mx2 += "Sx",i,"Sx",j;
-            my2 += "Sy",i,"Sy",j;
-            mz2 += "Sz",i,"Sz",j;
+            mx += "Sx",i,"Sx",j;
+            my += "Sy",i,"Sy",j;
+            mz += "Sz",i,"Sz",j;
         }
     }
-    std::array<itensor::MPO,3> m = {itensor::toMPO(mx),itensor::toMPO(my),itensor::toMPO(mz)};
+    std::array<itensor::MPO,3> m1 = {itensor::toMPO(mx),itensor::toMPO(my),itensor::toMPO(mz)};
     std::array<itensor::MPO,3> m2 = {itensor::toMPO(mx2),itensor::toMPO(my2),itensor::toMPO(mz2)};
-    std::array<std::array<itensor::MPO,3>,2> arr = {m,m2};
-    return arr;
+    std::array<std::array<itensor::MPO,3>,2> m = {m1,m2};
+
+    return m;
 }
 
 
@@ -294,7 +347,7 @@ std::vector<std::array<double,2>> Kitaev_Model::Mean(std::vector<std::vector<dou
 
 
 
-int Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, std::array<std::vector<double>,3>& Chi_vec, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& Sweeps, double& cb){
+int Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& Sweeps, double& cb){
     std::complex<double> tcompl2 = t;
     double t_beta = std::real(tcompl2) * -2;
     int max_bond = 0;
@@ -316,6 +369,16 @@ int Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_v
         C_vec.push_back(c);
         S_vec.push_back(s);
         W_vec.push_back(std::real(w)); 
+
+        for (int indi = 0; indi != 3; indi++){
+            std::complex<double> m = itensor::innerC(psi,M[indi],psi);
+            M_vec[indi].push_back(std::real(m));
+        }
+
+        for (int indi = 0; indi != 3; indi++){
+            std::complex<double> m2 = itensor::innerC(psi,M2[indi],psi);
+            M_vec2[indi].push_back(std::real(m2));
+        }
     }
     return max_bond;
 }
@@ -398,9 +461,8 @@ void Kitaev_Model::chi_int(itensor::MPS& psi, double n, double t, std::array<std
 
 
 
-void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, bool Calculate_Susceptibility, int max_sites, int init_rand_sites, std::string TDVP_Type){
+void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int max_sites, int init_rand_sites, std::string TDVP_Type){
     this->Calc_Type = false;
-    this->Calculate_Susceptibility = Calculate_Susceptibility;
     
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
@@ -425,14 +487,26 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
 
 
 
-    std::array<std::vector<std::vector<double>>,3> Suscept;
-    for (auto& i : Suscept){
+    std::array<std::vector<std::vector<double>>,3> Magnetization;
+    for (auto& i : Magnetization){
         i.reserve(Evols);
     }
-    std::array<std::vector<double>,3> Suscept_vec;
-    for (auto& i : Suscept_vec){
+    std::array<std::vector<double>,3> Mag_vec;
+    for (auto& i : Mag_vec){
         i.reserve(TimeSteps * intervals.size() + 1);
     }
+
+
+
+    std::array<std::vector<std::vector<double>>,3> Magnetization2;
+    for (auto& i : Magnetization2){
+        i.reserve(Evols);
+    }
+    std::array<std::vector<double>,3> Mag_vec2;
+    for (auto& i : Mag_vec2){
+        i.reserve(TimeSteps * intervals.size() + 1);
+    }
+
 
 
     std::cout << "Intervals: ";
@@ -476,13 +550,16 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
         W_vec.push_back(0);
         C_vec.push_back(0);
         S_vec.push_back(0);
-        for (auto& i : Suscept_vec){
+        for (auto& i : Mag_vec){
+            i.push_back(0);
+        }
+        for (auto& i : Mag_vec2){
             i.push_back(0);
         }
         //double n = 1;
 
         for (auto t = T.begin(); t != T.end(); t++){
-            int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Suscept_vec,psi,*t,TimeSteps,tdvp_args,Sweeps,curr_beta);
+            int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Mag_vec,Mag_vec2,psi,*t,TimeSteps,tdvp_args,Sweeps,curr_beta);
             max_bond = std::max(max_bond,curbond);
         }
         S_vec = S_vec.back() - S_vec;
@@ -496,9 +573,11 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
         Flux.push_back(W_vec);
         W_vec.clear();
 
-        for (int i = 0; i != Suscept.size(); i++){
-            Suscept[i].push_back(Suscept_vec[i]);
-            Suscept_vec[i].clear();
+        for (int i = 0; i != Magnetization.size(); i++){
+            Magnetization[i].push_back(Mag_vec[i]);
+            Mag_vec[i].clear();
+            Magnetization2[i].push_back(Mag_vec2[i]);
+            Mag_vec2[i].clear();
         }
         
 
@@ -514,9 +593,13 @@ void Kitaev_Model::Time_Evolution(int TimeSteps, std::vector<double> intervals, 
     S = Mean(Entropy);
     W = Mean(Flux);
 
-    Chix = Mean(Suscept[0]);
-    Chiy = Mean(Suscept[1]);
-    Chiz = Mean(Suscept[2]);
+    Mx = Mean(Magnetization[0]);
+    My = Mean(Magnetization[1]);
+    Mz = Mean(Magnetization[2]);
+
+    Mx2 = Mean(Magnetization2[0]);
+    My2 = Mean(Magnetization2[1]);
+    Mz2 = Mean(Magnetization2[2]);
 
     auto t3 = std::chrono::system_clock::now();
     auto time_total = std::chrono::duration<double>(t3-t0);

@@ -16,6 +16,7 @@
 #include <exception>
 #include <filesystem>
 #include "customspin_nitsch.h"
+#include "TDVP/basisextension.h"
 #pragma once
 
 
@@ -41,7 +42,6 @@ class Kitaev_Model{
     AutoMPO ampo;
     int Lattice_Type; // 1 for Honeycomb, 2 for Triangular, 3 for Periodic Honeycomb
     bool Calc_Type; // true for DMRG, false for TDVP
-    bool Calculate_Susceptibility;
 
     public:
     MPO H0;
@@ -59,13 +59,18 @@ class Kitaev_Model{
     std::vector<std::array<double,2>> Cv;
     std::vector<std::array<double,2>> S;
     std::vector<std::array<double,2>> W;
-    std::vector<std::array<double,2>> Chix;
-    std::vector<std::array<double,2>> Chiy;
-    std::vector<std::array<double,2>> Chiz;
+    std::vector<std::array<double,2>> Mx;
+    std::vector<std::array<double,2>> My;
+    std::vector<std::array<double,2>> Mz;
+    std::vector<std::array<double,2>> Mx2;
+    std::vector<std::array<double,2>> My2;
+    std::vector<std::array<double,2>> Mz2;
 
 
     std::array<int,3> get_neighbour_data_hex(int LX, int LY, int pos);
     std::array<int,3> get_neighbour_data_hex_periodic(int LX, int LY, int pos);
+    std::array<int,3> get_neighbour_data_hex_rev(int LX, int LY, int pos);
+    std::array<int,3> get_neighbour_data_hex_rev2(int LX, int LY, int pos);
     std::array<int,3> get_neighbour_data_tri(int LX, int LY, int pos);
 
     std::array<int,3> get_neighbour_data(int LX, int LY, int pos){
@@ -76,6 +81,10 @@ class Kitaev_Model{
             n = get_neighbour_data_tri(LX,LY,pos);
         } else if (Lattice_Type == 3){
             n = get_neighbour_data_hex_periodic(LX,LY,pos);
+        } else if (Lattice_Type == 4){
+            n = get_neighbour_data_hex_rev(LX,LY,pos);
+        } else if (Lattice_Type == 5){
+            n = get_neighbour_data_hex_rev2(LX,LY,pos);
         }
         return n;
     }
@@ -93,7 +102,7 @@ class Kitaev_Model{
     private:
     std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M);
     
-    int tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, std::array<std::vector<double>,3>& Chi_vec, MPS& psi, Cplx& t, int TimeSteps, Args& args, Sweeps& Sweeps, double& cb);
+    int tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2, MPS& psi, Cplx& t, int TimeSteps, Args& args, Sweeps& Sweeps, double& cb);
 
     void chi_int(MPS& psi, double n, double t, std::array<std::vector<double>,3>& chi_vec, double step, Sweeps& sweeps, Args& args);
 
@@ -111,12 +120,12 @@ class Kitaev_Model{
 
     public:
     MPS mpo_to_tanmps(MPO& H);
+    MPO tanmps_to_mpo(MPS& X);
     MPO mpo_to_tanmpo(MPO& H);
     MPS mps_to_tanmps(MPS& X);
-    void tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan, Sweeps& sweeps, Args& tdvp_args, std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, MPO& Hfluxtan, double& cb);
-    double tan_energy(MPS& Hexptan, MPO& H0tan, int states=25, int statesdim=64);
+    int tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan, Sweeps& sweeps, Args& tdvp_args, std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, MPO& Hfluxtan, double& cb, bool SusceptIntegral);
 
-    void Tan_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int max_sites=256);
+    void Tan_Evolution(int TimeSteps, std::vector<double> intervals, int max_sites=256, bool SusceptIntegral=false);
 
 
     public:
@@ -128,11 +137,18 @@ class Kitaev_Model{
         this -> sitestan = CustomSpin((LX*LY+2*aux),{"2S=",(dims*dims-1),"ConserveQNs=",false});
 
         std::vector<int> full_points;
-        if (shape == "Honeycomb" || shape == "HoneycombPeriodic"){
+        if (shape == "Honeycomb" || shape == "HoneycombPeriodic" || shape == "HoneycombReverse" || shape == "HoneycombReverse2"){
+            if (LY%2 != 0){
+                std::invalid_argument("LY needs to be divisible by 2 when using the honeycomb lattice");
+            }
             if (shape == "Honeycomb"){
                 Lattice_Type = 1;
-            } else {
+            } else if (shape == "HoneycombPeriodic") {
                 Lattice_Type = 3;
+            } else if (shape == "HoneycombReverse"){
+                Lattice_Type = 4;
+            } else if (shape == "HoneycombReverse2"){
+                Lattice_Type = 5;
             }
             full_points.reserve(((LY+1)/2)*LX);
             for (int m = 0; m != LX; m++){
@@ -166,9 +182,9 @@ class Kitaev_Model{
         //PrintData(H_flux);
         
         this -> H0 = toMPO(this -> ampo);
-        //auto Ms = magnetization_operators(LX,LY,aux);
-        //M = Ms[0];
-        //M2 = Ms[1];
+        auto Ms = magnetization_operators(LX,LY,aux);
+        M = Ms[0];
+        M2 = Ms[1];
 
         std::cout << "Spin " << DoubleSpin << "/2 System" << "\n";
         std::cout << "Lattice Type: " << shape << "\n";
@@ -184,8 +200,7 @@ class Kitaev_Model{
     }
 
 
-    void Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, bool Calculate_Suceptibility=false, int max_sites=256, int init_rand_sites=32, std::string TDVP_Type="TwoSite");
-    std::array<std::vector<std::array<double,2>>,2> Calculate_Heat_Capacity(int TimeSteps, std::vector<double>& intervals, std::vector<std::vector<double>>& Energies);
+    void Time_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int max_sites=256, int init_rand_sites=32, std::string TDVP_Type="TwoSite");
 
     Hamiltonian Get_Constants(){
         return H_Details;
@@ -206,21 +221,23 @@ class Kitaev_Model{
             std::string xC = x + "/" + "C";
             std::string xS = x + "/" + "S";
             std::string xW = x + "/" + "W";
+            std::string xcx = x + "/" + "Mx";
+            std::string xcy = x + "/" + "My";
+            std::string xcz = x + "/" + "Mz";
+            std::string xcx2 = x + "/" + "Mx2";
+            std::string xcy2 = x + "/" + "My2";
+            std::string xcz2 = x + "/" + "Mz2";
 
             save_data(xE,E);
             save_data(xC,Cv);
             save_data(xS,S);
             save_data(xW,W);
-
-            if (Calculate_Susceptibility){
-                std::string xcx = x + "/" + "Chix";
-                std::string xcy = x + "/" + "Chiy";
-                std::string xcz = x + "/" + "Chiz";
-
-                save_data(xcx,Chix);
-                save_data(xcy,Chiy);
-                save_data(xcz,Chiz);
-            }
+            save_data(xcx,Mx);
+            save_data(xcy,My);
+            save_data(xcz,Mz);
+            save_data(xcx2,Mx2);
+            save_data(xcy2,My2);
+            save_data(xcz2,Mz2);
         }
         
     }

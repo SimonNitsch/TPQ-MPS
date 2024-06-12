@@ -90,6 +90,8 @@
         "__hash_table": "cpp",
         "__node_handle": "cpp",
         "__tree": "cpp",
-        "queue": "cpp"
+        "queue": "cpp",
+        "unordered_set": "cpp",
+        "hash_map": "cpp"
     }
 }

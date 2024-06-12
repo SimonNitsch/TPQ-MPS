@@ -65,6 +65,81 @@ MPS Kitaev_Model::mpo_to_tanmps(MPO& H){
 }
 
 
+int adjusted_modulo(int A, int dims){
+    int y = A % dims;
+    if (y == 0){
+        y = dims;
+    }
+    return y;
+}
+
+
+
+MPO Kitaev_Model::tanmps_to_mpo(MPS& Xtan){
+    auto H = MPO(sites);
+
+    auto X1 = Xtan(1);
+    X1 = permute(X1,{siteIndex(Xtan,1),rightLinkIndex(Xtan,1)});
+    auto indlinkold = sim(rightLinkIndex(Xtan,1));
+    auto ind11 = siteInds(H,1)(1);
+    auto ind12 = siteInds(H,1)(2);
+    auto ten1 = ITensor(indlinkold,ind11,ind12);
+
+    for (auto I : iterInds(X1)){
+        Cplx value = eltC(X1,I);
+        auto newind1 = adjusted_modulo(val(I[0]),dims);
+        auto newind2 = (val(I[0]) - 1) / dims + 1;
+        ten1.set(val(I[1]),newind1,newind2,value);
+    }
+    H.set(1,ten1);
+
+    for (int i = 2; i != length(Xtan); i++){
+        auto Xiten = Xtan(i);
+        Xiten = permute(Xiten,{leftLinkIndex(Xtan,i),siteIndex(Xtan,i),rightLinkIndex(Xtan,i)});
+        auto indlinknew = sim(rightLinkIndex(Xtan,i));
+        auto indi1 = siteInds(H,i)(1);
+        auto indi2 = siteInds(H,i)(2);
+        auto teni = ITensor(indlinkold,indlinknew,indi1,indi2);
+
+        for (auto I : iterInds(Xiten)){
+            Cplx value = eltC(Xiten,I);
+            int newind1 = adjusted_modulo(val(I[1]),dims);
+            int newind2 = (val(I[1]) - 1) / dims + 1;
+            teni.set(val(I[0]),val(I[2]),newind1,newind2,value);
+        }
+        H.set(i,teni);
+        indlinkold = indlinknew;
+    }
+
+    int last = length(Xtan);
+    auto Xlast = Xtan(last);
+    Xlast = permute(Xlast,{leftLinkIndex(Xtan,last),siteIndex(Xtan,last)});
+    auto indl1 = siteInds(H,last)(1);
+    auto indl2 = siteInds(H,last)(2);
+    auto tenl = ITensor(indlinkold,indl1,indl2);
+
+    for(auto I : iterInds(Xlast)){
+        Cplx value = eltC(Xlast,I);
+        auto newind1 = adjusted_modulo(val(I[1]),dims);
+        auto newind2 = (val(I[1]) - 1) / dims + 1;
+        tenl.set(val(I[0]),newind1,newind2,value);
+    }
+    H.set(last,tenl);
+    
+
+    return H;
+
+
+}
+
+
+
+
+
+
+
+
+
 
 MPO Kitaev_Model::mpo_to_tanmpo(MPO& H){
     auto Htan = MPO(sitestan);
@@ -133,6 +208,11 @@ MPO Kitaev_Model::mpo_to_tanmpo(MPO& H){
 } 
 
 
+
+
+
+
+
 MPS Kitaev_Model::mps_to_tanmps(MPS& X){
     auto Xtan = MPS(sitestan);
 
@@ -190,37 +270,28 @@ MPS Kitaev_Model::mps_to_tanmps(MPS& X){
 }
 
 
-double Kitaev_Model::tan_energy(MPS& Hexptan, MPO& Htan, int states, int statesdim){
-    double Eprop = 0;
-    for (int j = 0; j != states; j++){
-        auto ranpsi = randomMPS(sites,statesdim);
-        auto ranpsitan = mps_to_tanmps(ranpsi);
-        std::complex<double> curE = (innerC(Hexptan,Htan,ranpsitan) / innerC(Hexptan,ranpsitan));
-        Eprop += std::real(curE);
-    }
-    Eprop /= static_cast<double>(states);
-    return Eprop;
-}
 
+int Kitaev_Model::tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan, Sweeps& sweeps, Args& tdvp_args, std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, MPO& Hfluxtan, double& cb, bool SusceptIntegral){
 
-
-void Kitaev_Model::tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan, Sweeps& sweeps, Args& tdvp_args, std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, MPO& Hfluxtan, double& cb){
-
+    int max_bond = 0;
     for (int i = 0; i != steps; i++){
-        auto stupid_result = tdvp(Hexptan,H0tan,-1.*dt*Cplx_1,sweeps,tdvp_args);
+        auto stupid_result = tdvp(Hexptan,H0tan,-0.5*dt*Cplx_1,sweeps,tdvp_args);
 
         cb += dt;
-        double current_energy = tan_energy(Hexptan,H0tan);
+        double current_energy = std::real(innerC(Hexptan,H0tan,Hexptan));
         double curc = cb * cb * (E_vec.back() - current_energy) / dt;
-        double curs = S_vec.back() + dt * 0.5 * (curc/cb + E_vec.back()/(cb-dt));
-        double curw = tan_energy(Hexptan,Hfluxtan);
+        double curs = S_vec.back() + dt * 0.5 * (curc/cb + C_vec.back()/(cb-dt));
+        double curw = std::real(innerC(Hexptan,Hfluxtan,Hexptan));
 
         E_vec.push_back(current_energy);
         C_vec.push_back(curc);
         S_vec.push_back(curs);
         W_vec.push_back(curw);
-    }
 
+        max_bond = std::max(max_bond,maxLinkDim(Hexptan));
+    }
+    
+    return max_bond;
 }
 
 
@@ -228,80 +299,111 @@ void Kitaev_Model::tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan,
 
 
 
-void Kitaev_Model::Tan_Evolution(int TimeSteps, std::vector<double> intervals, int Evols, int max_sites){
-    auto Hexp = toExpH(ampo,intervals[0]/static_cast<double>(TimeSteps)*Cplx_1);
+void Kitaev_Model::Tan_Evolution(int TimeSteps, std::vector<double> intervals, int max_sites, bool SusceptIntegral){
+    auto t0 = std::chrono::system_clock::now();
+
+    auto Hexp1 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1+Cplx_i));
+    auto Hexp2 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1-Cplx_i));
+    auto Hexp = nmultMPO(Hexp2,prime(Hexp1));
     auto Hexptan = mpo_to_tanmps(Hexp);
+    Hexptan.orthogonalize();
+    Hexptan.normalize();
     auto H0tan = mpo_to_tanmpo(H0);
     auto Hfluxtan = mpo_to_tanmpo(H_flux);
 
+    MPO Hexpinv;
+    if (SusceptIntegral){
+        auto Hexpinv1 = toExpH(ampo,-0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1+Cplx_i));
+        auto Hexpinv2 = toExpH(ampo,-0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1-Cplx_i));
+        Hexpinv = nmultMPO(Hexpinv2,prime(Hexpinv1));    
+    }
+
+    std::vector<double> eps = {1e-10,1e-10};
+    addBasis(Hexptan,H0tan,eps,{"Cutoff",1E-8,
+                                "Method","DensityMatrix",
+                                "KrylovOrd",3,
+                                "DoNormalize",true,
+                                "Quiet",true});
+
     auto sweeps = Sweeps(1);
     sweeps.maxdim() = max_sites;
-    sweeps.cutoff() = 1e-10;
+    sweeps.cutoff() = 1e-8;
     sweeps.niter() = 30;
 
-    auto tdvp_args = Args({"Silent",true,"ErrGoal",1E-7,"DoNormalize",false});
+    auto tdvp_args = Args({"Silent",true,"ErrGoal",1E-7});
     
     std::vector<std::vector<double>> Energies;
-    Energies.reserve(Evols);
     std::vector<double> E_vec;
     E_vec.reserve((TimeSteps) * intervals.size() + 1);
 
     std::vector<std::vector<double>> Capacities;
-    Capacities.reserve(Evols);
     std::vector<double> C_vec;
     C_vec.reserve((TimeSteps) * intervals.size() + 1);
 
     std::vector<std::vector<double>> Entropies;
-    Entropies.reserve(Evols);
     std::vector<double> S_vec;
     S_vec.reserve((TimeSteps) * intervals.size() + 1);
 
     std::vector<std::vector<double>> Flux;
-    Flux.reserve(Evols);
     std::vector<double> W_vec;
     W_vec.reserve((TimeSteps) * intervals.size() + 1);
 
-
-
-    for (int i = 0; i != Evols; i++){
-        E_vec.push_back(0.);
-        E_vec.push_back(tan_energy(Hexptan,H0tan));
-        W_vec.push_back(0.);
-        W_vec.push_back(tan_energy(Hexptan,Hfluxtan));
-
-        double dt1 = intervals[0] / static_cast<double>(TimeSteps);
-        double cur_beta = dt1;
-        
-        C_vec.push_back(0.);
-        C_vec.push_back(cur_beta * (E_vec[1] - E_vec[0]));
-        S_vec.push_back(0.);
-        S_vec.push_back(dt1 * 0.5 * C_vec[1] / cur_beta);
-
-
-        tan_tdvp_loop(TimeSteps-1,dt1,Hexptan,H0tan,sweeps,tdvp_args,E_vec,C_vec,S_vec,W_vec,Hfluxtan,cur_beta);
-
-        for (auto i = intervals.begin()+1; i != intervals.end(); i++){
-            double dt = *i / static_cast<double>(TimeSteps);
-            tan_tdvp_loop(TimeSteps,dt,Hexptan,H0tan,sweeps,tdvp_args,E_vec,C_vec,S_vec,W_vec,Hfluxtan,cur_beta);
-        }
-        Energies.push_back(E_vec);
-        E_vec.clear();
-        Capacities.push_back(C_vec);
-        C_vec.clear();
-        Entropies.push_back(S_vec.back() - S_vec);
-        S_vec.clear();
-        Flux.push_back(W_vec);
-        W_vec.clear();
-
+    std::array<std::vector<double>,3> Susceptibility;
+    for (auto& i : Susceptibility){
+        i.reserve(TimeSteps * intervals.size() + 1);
+        i.push_back(0.);
     }
+
+
+    E_vec.push_back(0.);
+    E_vec.push_back(std::real(innerC(Hexptan,H0tan,Hexptan)));
+    W_vec.push_back(0.);
+    W_vec.push_back(std::real(innerC(Hexptan,Hfluxtan,Hexptan)));
+
+    double dt1 = intervals[0] / static_cast<double>(TimeSteps);
+    double cur_beta = dt1;
+    
+    C_vec.push_back(0.);
+    C_vec.push_back(cur_beta * (E_vec[1] - E_vec[0]));
+    S_vec.push_back(0.);
+    S_vec.push_back(dt1 * 0.5 * C_vec[1] / cur_beta);
+
+    int max_bond = tan_tdvp_loop(TimeSteps-1,dt1,Hexptan,H0tan,sweeps,tdvp_args,E_vec,C_vec,S_vec,W_vec,Hfluxtan,cur_beta,SusceptIntegral);
+
+    for (auto i = intervals.begin()+1; i != intervals.end(); i++){
+        double dt = *i / static_cast<double>(TimeSteps);
+        int m2 = tan_tdvp_loop(TimeSteps,dt,Hexptan,H0tan,sweeps,tdvp_args,E_vec,C_vec,S_vec,W_vec,Hfluxtan,cur_beta,SusceptIntegral);
+        max_bond = std::max(max_bond,m2);
+    }
+    Energies.push_back(E_vec);
+    E_vec.clear();
+    Capacities.push_back(C_vec);
+    C_vec.clear();
+    Entropies.push_back(S_vec.back() - S_vec);
+    S_vec.clear();
+    Flux.push_back(W_vec);
+    W_vec.clear();
+
 
     E = Mean(Energies);
     Cv = Mean(Capacities);
     S = Mean(Entropies);
     W = Mean(Flux);
 
+    auto tfin = std::chrono::system_clock::now();
+    auto time = std::chrono::duration<double>(tfin-t0);
 
+    auto hours = std::chrono::duration_cast<std::chrono::hours>(time);
+    auto minutes = std::chrono::duration_cast<std::chrono::minutes>(time-hours);
+    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(time-hours-minutes);
 
+    std::cout << "Finished Simulation, Time Needed: " << hours.count() << " Hours, " << minutes.count() << " Minutes, " << seconds.count() << " Seconds\n\n" << std::flush;
+    if (max_bond == max_sites){
+        std::cout << "Warning: MPS bond dimension has reached the bond dimension maximum. For more accurate results increase max_sites.\n\n" << std::flush;
+    }
+    else {
+        std::cout << "Maximum MPS bond dimension: " << max_bond << "\n\n" << std::flush;
+    }
 }
 
 
