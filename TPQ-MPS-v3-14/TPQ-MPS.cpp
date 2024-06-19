@@ -6,7 +6,7 @@
 namespace TPQ_MPS{
 
 
-std::array<int,3> Kitaev_Model::get_neighbour_data_hex(int LX, int LY, int pos){
+std::array<int,3> Kitaev_Model::get_neighbour_data_hex(int pos){
     int Y = (pos-1) % LY;
     int X = (pos-1) / LY;
     std::array<int,3> neighbours{};
@@ -25,7 +25,7 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_hex(int LX, int LY, int pos){
 }
 
 
-std::array<int,3> Kitaev_Model::get_neighbour_data_hex_periodic(int LX, int LY, int pos){
+std::array<int,3> Kitaev_Model::get_neighbour_data_hex_periodic(int pos){
     int Y = (pos-1) % LY;
     int X = (pos-1) / LY;
     std::array<int,3> neighbours{};
@@ -50,7 +50,7 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_hex_periodic(int LX, int LY, 
 } 
 
 
-std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev(int LX, int LY, int pos){
+std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev(int pos){
     int Y = (pos-1) % LY;
     int X = (pos-1) / LY;
     std::array<int,3> neighbours{};
@@ -75,20 +75,21 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev(int LX, int LY, int p
 }
 
 
-std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev2(int LX, int LY, int pos){
+std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev2(int pos){
     int Y = LY - 1 - (pos-1) % LY;
     int X = (pos-1) / LY;
     std::array<int,3> neighbours{};
 
-    neighbours[0] = pos+1;
-
     if (X != 0){
-        neighbours[1] = pos-LY+1;
+        neighbours[0] = pos-LY+1;
     }
     else {
-        neighbours[1] = pos+(LX-1)*LY+1;
-    }  
-    if (Y != 0){
+        neighbours[0] = pos+(LX-1)*LY+1;
+    }
+    
+    neighbours[1] = pos+1;
+
+    if (Y != LY-1){
         neighbours[2] = pos-1;
     }
     else {
@@ -102,7 +103,7 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev2(int LX, int LY, int 
 
 
 
-std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int LX, int LY, int pos){
+std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int pos){
     int X = (pos-1) / LY;
     int Y = (pos-1) % LY;
     std::array<int,3> neighbours{};
@@ -140,82 +141,82 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int LX, int LY, int pos){
 
 
 
-void Kitaev_Model::add_kitaev_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
+void Kitaev_Model::add_kitaev_interaction(std::vector<int>& p_vec, int aux, int sec_aux){
     double Kx = H_Details.get("Kx");
     double Ky = H_Details.get("Ky");
     double Kz = H_Details.get("Kz");
     
     for (int& i : p_vec){
-        std::array<int,3> n = get_neighbour_data(LX,LY,i);
+        std::array<int,3> n = get_neighbour_data(i);
         if (n[0] != 0){
-            ampo += Kx,"Sx",i+aux,"Sx",n[0]+aux;
+            ampo += Kx,"Sx",aux_num(i,aux,sec_aux),"Sx",aux_num(n[0],aux,sec_aux);
         }
         if (n[1] != 0){
-            ampo += Ky,"Sy",i+aux,"Sy",n[1]+aux;
+            ampo += Ky,"Sy",aux_num(i,aux,sec_aux),"Sy",aux_num(n[1],aux,sec_aux);
         }
         if (n[2] != 0){
-            ampo += Kz,"Sz",i+aux,"Sz",n[2]+aux;
+            ampo += Kz,"Sz",aux_num(i,aux,sec_aux),"Sz",aux_num(n[2],aux,sec_aux);
         }
     }
 
 }
 
 
-void Kitaev_Model::add_magnetic_interaction(int LX, int LY, int aux){
+void Kitaev_Model::add_magnetic_interaction(int aux, int sec_aux){
     double hx = H_Details.get("hx");
     double hy = H_Details.get("hy");
     double hz = H_Details.get("hz");
 
-    for (int i = aux+1; i != LX*LY+aux+1; i++){
-        ampo += -1*hx,"Sx",i;
-        ampo += -1*hy,"Sy",i;
-        ampo += -1*hz,"Sz",i;
+    for (int i = 1; i != LX*LY+1; i++){
+        ampo += -1*hx,"Sx",aux_num(i,aux,sec_aux);
+        ampo += -1*hy,"Sy",aux_num(i,aux,sec_aux);
+        ampo += -1*hz,"Sz",aux_num(i,aux,sec_aux);
     }
 }
 
 
 
-void Kitaev_Model::add_heisenberg_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
+void Kitaev_Model::add_heisenberg_interaction(std::vector<int>& p_vec, int aux, int sec_aux){
     double J = H_Details.get("J");
 
     for (int& i : p_vec){
-        std::array<int,3> n = get_neighbour_data(LX,LY,i);
+        std::array<int,3> n = get_neighbour_data(i);
         if (n[0] != 0){
-            ampo += J,"Sz",i+aux,"Sz",n[0]+aux;
-            ampo += J*0.5,"S+",i+aux,"S-",n[0]+aux;
-            ampo += J*0.5,"S-",i+aux,"S+",n[0]+aux;
+            ampo += J,"Sz",aux_num(i,aux,sec_aux),"Sz",aux_num(n[0],aux,sec_aux);
+            ampo += J*0.5,"S+",aux_num(i,aux,sec_aux),"S-",aux_num(n[0],aux,sec_aux);
+            ampo += J*0.5,"S-",aux_num(i,aux,sec_aux),"S+",aux_num(n[0],aux,sec_aux);
         }
         if (n[1] != 0){
-            ampo += J,"Sz",i+aux,"Sz",n[1]+aux;
-            ampo += J*0.5,"S+",i+aux,"S-",n[1]+aux;
-            ampo += J*0.5,"S-",i+aux,"S+",n[1]+aux;
+            ampo += J,"Sz",aux_num(i,aux,sec_aux),"Sz",aux_num(n[1],aux,sec_aux);
+            ampo += J*0.5,"S+",aux_num(i,aux,sec_aux),"S-",aux_num(n[1],aux,sec_aux);
+            ampo += J*0.5,"S-",aux_num(i,aux,sec_aux),"S+",aux_num(n[1],aux,sec_aux);
         }
         if (n[2] != 0){
-            ampo += J,"Sz",i+aux,"Sz",n[2]+aux;
-            ampo += J*0.5,"S+",i+aux,"S-",n[2]+aux;
-            ampo += J*0.5,"S-",i+aux,"S+",n[2]+aux;
+            ampo += J,"Sz",aux_num(i,aux,sec_aux),"Sz",aux_num(n[2],aux,sec_aux);
+            ampo += J*0.5,"S+",aux_num(i,aux,sec_aux),"S-",aux_num(n[2],aux,sec_aux);
+            ampo += J*0.5,"S-",aux_num(i,aux,sec_aux),"S+",aux_num(n[2],aux,sec_aux);
         }
     }
 
 }
 
 
-void Kitaev_Model::add_gamma_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
+void Kitaev_Model::add_gamma_interaction(std::vector<int>& p_vec, int aux, int sec_aux){
     double G = H_Details.get("Gamma");
 
     for (int& i : p_vec){
-        std::array<int,3> n = get_neighbour_data(LX,LY,i);
+        std::array<int,3> n = get_neighbour_data(i);
         if (n[0] != 0){
-            ampo += G,"Sy",i+aux,"Sz",n[0]+aux;
-            ampo += G,"Sz",i+aux,"Sy",n[0]+aux;
+            ampo += G,"Sy",aux_num(i,aux,sec_aux),"Sz",aux_num(n[0],aux,sec_aux);
+            ampo += G,"Sz",aux_num(i,aux,sec_aux),"Sy",aux_num(n[0],aux,sec_aux);
         }
         if (n[1] != 0){
-            ampo += G,"Sx",i+aux,"Sz",n[1]+aux;
-            ampo += G,"Sz",i+aux,"Sx",n[1]+aux;
+            ampo += G,"Sx",aux_num(i,aux,sec_aux),"Sz",aux_num(n[1],aux,sec_aux);
+            ampo += G,"Sz",aux_num(i,aux,sec_aux),"Sx",aux_num(n[1],aux,sec_aux);
         }
         if (n[2] != 0){
-            ampo += G,"Sx",i+aux,"Sy",n[2]+aux;
-            ampo += G,"Sy",i+aux,"Sx",n[2]+aux;
+            ampo += G,"Sx",aux_num(i,aux,sec_aux),"Sy",aux_num(n[2],aux,sec_aux);
+            ampo += G,"Sy",aux_num(i,aux,sec_aux),"Sx",aux_num(n[2],aux,sec_aux);
         }
     }
 
@@ -223,36 +224,50 @@ void Kitaev_Model::add_gamma_interaction(int LX, int LY, std::vector<int>& p_vec
 
 
 
-void Kitaev_Model::add_gammaq_interaction(int LX, int LY, std::vector<int>& p_vec, int aux){
+void Kitaev_Model::add_gammaq_interaction(std::vector<int>& p_vec, int aux, int sec_aux){
     double GQ = H_Details.get("GammaQ");
 
     for (int& i : p_vec){
-        std::array<int,3> n = get_neighbour_data(LX,LY,i);
+        std::array<int,3> n = get_neighbour_data(i);
         if (n[0] != 0){
-            ampo += GQ,"Sy",i+aux,"Sx",n[0]+aux;
-            ampo += GQ,"Sx",i+aux,"Sy",n[0]+aux;
-            ampo += GQ,"Sz",i+aux,"Sx",n[0]+aux;
-            ampo += GQ,"Sx",i+aux,"Sz",n[0]+aux;
+            ampo += GQ,"Sy",aux_num(i,aux,sec_aux),"Sx",aux_num(n[0],aux,sec_aux);
+            ampo += GQ,"Sx",aux_num(i,aux,sec_aux),"Sy",aux_num(n[0],aux,sec_aux);
+            ampo += GQ,"Sz",aux_num(i,aux,sec_aux),"Sx",aux_num(n[0],aux,sec_aux);
+            ampo += GQ,"Sx",aux_num(i,aux,sec_aux),"Sz",aux_num(n[0],aux,sec_aux);
         }
         if (n[1] != 0){
-            ampo += GQ,"Sx",i+aux,"Sy",n[1]+aux;
-            ampo += GQ,"Sy",i+aux,"Sx",n[1]+aux;
-            ampo += GQ,"Sz",i+aux,"Sy",n[1]+aux;
-            ampo += GQ,"Sy",i+aux,"Sz",n[1]+aux;
+            ampo += GQ,"Sx",aux_num(i,aux,sec_aux),"Sy",aux_num(n[1],aux,sec_aux);
+            ampo += GQ,"Sy",aux_num(i,aux,sec_aux),"Sx",aux_num(n[1],aux,sec_aux);
+            ampo += GQ,"Sz",aux_num(i,aux,sec_aux),"Sy",aux_num(n[1],aux,sec_aux);
+            ampo += GQ,"Sy",aux_num(i,aux,sec_aux),"Sz",aux_num(n[1],aux,sec_aux);
         }
         if (n[2] != 0){
-            ampo += GQ,"Sx",i+aux,"Sz",n[2]+aux;
-            ampo += GQ,"Sz",i+aux,"Sx",n[2]+aux;
-            ampo += GQ,"Sz",i+aux,"Sy",n[2]+aux;
-            ampo += GQ,"Sy",i+aux,"Sz",n[2]+aux;
+            ampo += GQ,"Sx",aux_num(i,aux,sec_aux),"Sz",aux_num(n[2],aux,sec_aux);
+            ampo += GQ,"Sz",aux_num(i,aux,sec_aux),"Sx",aux_num(n[2],aux,sec_aux);
+            ampo += GQ,"Sz",aux_num(i,aux,sec_aux),"Sy",aux_num(n[2],aux,sec_aux);
+            ampo += GQ,"Sy",aux_num(i,aux,sec_aux),"Sz",aux_num(n[2],aux,sec_aux);
         }
     }
 
 }
 
 
+int Kitaev_Model::aux_num(int pos, int aux, int sec_aux){
+    int totaux = pos + aux;
 
-itensor::MPO Kitaev_Model::honeycomb_flux_operator_half(int LX, int LY, int aux){
+    if (pos > LY){
+        totaux += sec_aux;
+    }
+    if (pos > (LX-1)*LY){
+        totaux += sec_aux;
+    }
+
+    return totaux;
+}
+
+
+
+itensor::MPO Kitaev_Model::honeycomb_flux_operator_half(int aux, int sec_aux){
     int Py = std::max((LY/2)-1,0);
     int Px = LX-1;
     auto fluxop = itensor::AutoMPO(sites);
@@ -260,8 +275,16 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator_half(int LX, int LY, int aux)
 
     for (int i = 0; i != Px; i++){
         for (int j = 0; j != Py; j++){
-            int f = LY*i + 2*j + 2 + aux;
-            fluxop += Wfac,"Sx",f,"Sy",f+1,"Sz",f+2,"Sx",f+LY+1,"Sy",f+LY,"Sz",f+LY-1;
+            int f_prot = LY*i + 2*j + 2;
+
+            int f1 = aux_num(f_prot,aux,sec_aux);
+            int f2 = aux_num(f_prot+1,aux,sec_aux);
+            int f3 = aux_num(f_prot+2,aux,sec_aux);
+            int f4 = aux_num(f_prot+LY+1,aux,sec_aux);
+            int f5 = aux_num(f_prot+LY,aux,sec_aux);
+            int f6 = aux_num(f_prot+LY-1,aux,sec_aux);
+
+            fluxop += Wfac,"Sx",f1,"Sy",f2,"Sz",f3,"Sx",f4,"Sy",f5,"Sz",f6;
         }
     }
     auto fluxH = itensor::toMPO(fluxop);
@@ -271,7 +294,7 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator_half(int LX, int LY, int aux)
 
 
 
-itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
+itensor::MPO Kitaev_Model::honeycomb_flux_operator(int aux, int sec_aux){
     int Py = std::max((LY/2)-1,0);
     int Px = LX-1;
     auto fluxop = itensor::AutoMPO(sites);
@@ -279,8 +302,16 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
 
     for (int i = 0; i != Px; i++){
         for (int j = 0; j != Py; j++){
-            int f = LY*i + 2*j + 2 + aux;
-            fluxop += -1*Wfac,"Expx",f,"Expy",f+1,"Expz",f+2,"Expx",f+LY+1,"Expy",f+LY,"Expz",f+LY-1;
+            int f_prot = LY*i + 2*j + 2 + aux;
+
+            int f1 = aux_num(f_prot,aux,sec_aux);
+            int f2 = aux_num(f_prot+1,aux,sec_aux);
+            int f3 = aux_num(f_prot+2,aux,sec_aux);
+            int f4 = aux_num(f_prot+LY+1,aux,sec_aux);
+            int f5 = aux_num(f_prot+LY,aux,sec_aux);
+            int f6 = aux_num(f_prot+LY-1,aux,sec_aux);
+
+            fluxop += Wfac,"Expx",f1,"Expy",f2,"Expz",f3,"Expx",f4,"Expy",f5,"Expz",f6;
         }
     }    
     auto fluxH = itensor::toMPO(fluxop);
@@ -291,7 +322,7 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator(int LX, int LY, int aux){
 
 
 
-std::array<std::array<itensor::MPO,3>,2> Kitaev_Model::magnetization_operators(int LX, int LY, int aux){
+std::array<std::array<itensor::MPO,3>,2> Kitaev_Model::magnetization_operators(int aux, int sec_aux){
     auto mx = itensor::AutoMPO(sites);
     auto my = itensor::AutoMPO(sites);
     auto mz = itensor::AutoMPO(sites);
@@ -299,14 +330,14 @@ std::array<std::array<itensor::MPO,3>,2> Kitaev_Model::magnetization_operators(i
     auto my2 = itensor::AutoMPO(sites);
     auto mz2 = itensor::AutoMPO(sites);
 
-    for (int i = aux+1; i <= LX*LY+aux; i++){
-        mx += "Sx",i;
-        my += "Sy",i;
-        mz += "Sz",i;
-        for (int j = aux+1; j <= LX*LY+aux; j++){
-            mx += "Sx",i,"Sx",j;
-            my += "Sy",i,"Sy",j;
-            mz += "Sz",i,"Sz",j;
+    for (int i = 1; i <= LX*LY; i++){
+        mx += "Sx",aux_num(i,aux,sec_aux);
+        my += "Sy",aux_num(i,aux,sec_aux);
+        mz += "Sz",aux_num(i,aux,sec_aux);
+        for (int j = 1; j < i; j++){
+            mx2 += "Sx",aux_num(i,aux,sec_aux),"Sx",aux_num(j,aux,sec_aux);
+            my2 += "Sy",aux_num(i,aux,sec_aux),"Sy",aux_num(j,aux,sec_aux);
+            mz2 += "Sz",aux_num(i,aux,sec_aux),"Sz",aux_num(j,aux,sec_aux);
         }
     }
     std::array<itensor::MPO,3> m1 = {itensor::toMPO(mx),itensor::toMPO(my),itensor::toMPO(mz)};
@@ -347,7 +378,9 @@ std::vector<std::array<double,2>> Kitaev_Model::Mean(std::vector<std::vector<dou
 
 
 
-int Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& sweeps, double& cb){
+int Kitaev_Model::tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec,
+std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
+itensor::MPO& H0, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& sweeps, double& cb){
     std::complex<double> tcompl2 = t;
     double t_beta = std::real(tcompl2) * -2;
     int max_bond = 0;
@@ -458,8 +491,32 @@ void Kitaev_Model::chi_int(itensor::MPS& psi, double n, double t, std::array<std
 
 
 
-void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites, int init_rand_sites, std::string TDVP_Type){
-    this->Calc_Type = false;
+void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites, int init_rand_sites, std::string TDVP_Type, double SusceptDiff){
+    this->CalcTDVP = true;
+    this->SusceptIntegral = SusceptDiff != 0;
+
+    if (SusceptIntegral){
+        double hx = H_Details.get("hx");
+        double hy = H_Details.get("hy");
+        double hz = H_Details.get("hz");
+
+        H_Details.set("hx",hx+SusceptDiff);
+        add_magnetic_interaction(aux,sec_aux);
+        H0x = toMPO(ampo);
+
+        H_Details.set("hx",hx);
+        H_Details.set("hy",hy+SusceptDiff);
+        add_magnetic_interaction(aux,sec_aux);
+        H0y = toMPO(ampo);
+
+        H_Details.set("hy",hy);
+        H_Details.set("hz",hz+SusceptDiff);
+        add_magnetic_interaction(aux,sec_aux);
+        H0z = toMPO(ampo);
+
+        H_Details.set("hz",hz);
+    }
+
     
     if (timesteps.size() != intervals.size()){
         std::invalid_argument("Time Steps vector and Intervals vector have to have the same length");
@@ -513,6 +570,12 @@ void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double
     }
 
 
+    std::array<std::vector<std::vector<double>>,3> Suscecptibility;
+    for (auto& i : Suscecptibility){
+        i.reserve(Evols);
+    }
+
+
 
     std::cout << "Intervals: ";
     for (auto& i : intervals){
@@ -530,7 +593,7 @@ void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double
     auto Sweeps = itensor::Sweeps(1);
     itensor::Args tdvp_args;
     if (TDVP_Type == "TwoSite") {
-        tdvp_args = itensor::Args({"Silent",true,"ErrGo\na << std::flush;l",1E-7});
+        tdvp_args = itensor::Args({"Silent",true,"ErrGoal",1E-7});
     } else {
         tdvp_args = itensor::Args({"Silent",true,"ErrGoal",1E-7,"NumCenter",1});
     }
@@ -553,6 +616,9 @@ void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double
         double curr_beta = 0;
         auto t1 = std::chrono::system_clock::now();
         auto psi = itensor::randomMPS(sites,init_rand_sites);
+        MPS psix = psi;
+        MPS psiy = psi;
+        MPS psiz = psi;
 
         std::complex<double> E = itensor::innerC(psi,H0,psi) / itensor::inner(psi,psi);
         E_vec.push_back(std::real(E));
@@ -568,7 +634,7 @@ void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double
         //double n = 1;
 
         for (int j = 0; j != timesteps.size(); j++){
-            int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Mag_vec,Mag_vec2,psi,T[j],timesteps[j],tdvp_args,Sweeps,curr_beta);
+            int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Mag_vec,Mag_vec2,H0,psi,T[j],timesteps[j],tdvp_args,Sweeps,curr_beta);
             max_bond = std::max(max_bond,curbond);
         }
         S_vec = S_vec.back() - S_vec;
@@ -588,6 +654,72 @@ void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double
             Magnetization2[j].push_back(Mag_vec2[i]);
             Mag_vec2[j].clear();
         }
+
+        
+        if (SusceptIntegral){
+            double curr_betax = 0;
+            double curr_betay = 0;
+            double curr_betaz = 0;
+
+            std::vector<double> e_vec;
+            e_vec.reserve(entries);
+            std::vector<double> c_vec;
+            c_vec.reserve(entries);
+            std::vector<double> s_vec;
+            s_vec.reserve(entries);
+            std::vector<double> w_vec;
+            w_vec.reserve(entries);
+
+            std::array<std::vector<double>,3> Mag_vec_nextx;
+            for (auto& i : Mag_vec_nextx){
+                i.reserve(entries);
+            }
+            std::array<std::vector<double>,3> Mag_vec_nexty;
+            for (auto& i : Mag_vec_nexty){
+                i.reserve(entries);
+            }
+            std::array<std::vector<double>,3> Mag_vec_nextz;
+            for (auto& i : Mag_vec_nextz){
+                i.reserve(entries);
+            }
+            std::array<std::vector<double>,3> Mag_vec_next2;
+            for (auto& i : Mag_vec_next2){
+                i.reserve(entries);
+            }
+
+
+            e_vec.push_back(std::real(E));
+            w_vec.push_back(0);
+            c_vec.push_back(0);
+            s_vec.push_back(0);
+            for (auto& i : Mag_vec_nextx){
+                i.push_back(0);
+            }
+            for (auto& i : Mag_vec_nextz){
+                i.push_back(0);
+            }
+            for (auto& i : Mag_vec_nexty){
+                i.push_back(0);
+            }
+            for (auto& i : Mag_vec_next2){
+                i.push_back(0);
+            }
+
+            for (int j = 0; j != timesteps.size(); j++){
+                int dumb_shit = tdvp_loop(e_vec,e_vec,s_vec,w_vec,Mag_vec_nextx,Mag_vec_next2,H0x,psix,T[j],timesteps[j],tdvp_args,Sweeps,curr_betax);
+                int dumb_shit2 = tdvp_loop(e_vec,e_vec,s_vec,w_vec,Mag_vec_nexty,Mag_vec_next2,H0y,psiz,T[j],timesteps[j],tdvp_args,Sweeps,curr_betay);
+                int dumb_shit3 = tdvp_loop(e_vec,e_vec,s_vec,w_vec,Mag_vec_nextz,Mag_vec_next2,H0z,psiy,T[j],timesteps[j],tdvp_args,Sweeps,curr_betaz);
+            }
+
+            std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
+            std::vector<double> chiy = Mag_vec_nexty[1] - Mag_vec[1];
+            std::vector<double> chiz = Mag_vec_nextz[2] - Mag_vec[2];
+            Suscecptibility[0].push_back(chix/SusceptDiff);
+            Suscecptibility[1].push_back(chiy/SusceptDiff);
+            Suscecptibility[2].push_back(chiz/SusceptDiff);
+
+        }
+
         
 
         auto t2 = std::chrono::system_clock::now();
@@ -609,6 +741,12 @@ void Kitaev_Model::Time_Evolution(std::vector<int> timesteps, std::vector<double
     Mx2 = Mean(Magnetization2[0]);
     My2 = Mean(Magnetization2[1]);
     Mz2 = Mean(Magnetization2[2]);
+
+    if (SusceptIntegral){
+        Chix = Mean(Suscecptibility[0]);
+        Chiy = Mean(Suscecptibility[1]);
+        Chiz = Mean(Suscecptibility[2]);
+    }
 
     auto t3 = std::chrono::system_clock::now();
     auto time_total = std::chrono::duration<double>(t3-t0);

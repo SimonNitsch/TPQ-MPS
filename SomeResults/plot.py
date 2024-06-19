@@ -4,11 +4,11 @@ import os
 
 
     
-intervals = np.array([1,9,25,25,25,25,40,50,50,50,50,50,100])
-particles = 24
-filename = "MagnetTest/Dataproto/"
+intervals = np.array([3,5,12,15,25,25,25])
+particles = 8
+filename = "SusTest/Sus2/"
 filename2 = "Classic"
-K = 1.33
+K = 1.
     
 os.chdir("../SomeResults")   
 
@@ -28,10 +28,12 @@ Dimerz = lambda T, J : 1/2/T * np.exp(J/4/T) / (np.exp(J/4/T) - np.exp(-J/4/T))
 Dimerx = lambda T, J : 1/J * np.tanh(J/4/T)
     
 interval_steps = int((YE.shape[0]-1) / intervals.shape[0])
+
 print(interval_steps)
     
 CS = True
 W = True
+M = True
 Chi = True
 try:
     YC = np.loadtxt(filename+"C.txt",delimiter=",")
@@ -43,12 +45,22 @@ try:
     yw = []
 except:
     W = False
+try: 
+    YMx = np.loadtxt(filename+"Mx.txt",delimiter=",")
+    YMy = np.loadtxt(filename+"My.txt",delimiter=",")
+    YMz = np.loadtxt(filename+"Mz.txt",delimiter=",")
+    YMx2 = np.loadtxt(filename+"Mx2.txt",delimiter=",")
+    YMy2 = np.loadtxt(filename+"My2.txt",delimiter=",")
+    YMz2 = np.loadtxt(filename+"Mz2.txt",delimiter=",")
+except:
+    M = False
 try:
     YCHIx = np.loadtxt(filename+"Chix.txt",delimiter=",")
     YCHIy = np.loadtxt(filename+"Chiy.txt",delimiter=",")
     YCHIz = np.loadtxt(filename+"Chiz.txt",delimiter=",")
 except:
     Chi = False
+
         
         
               
@@ -63,7 +75,7 @@ x.append(np.array([1/sum_i]))
 x = np.hstack(x)[1:]
 xb = 1/x
 ye = YE[1:,:] / particles
-plt.figure()
+plt.figure(figsize=[12,6])
 plt.plot(x,ye[:,0],"b")
 plt.plot([x[-1],x[0]],[G,G],"r--")
 plt.legend(["Energy","Ground State Energy"])
@@ -84,7 +96,7 @@ print(sum)
 if CS:
     yc = YC[1:,:] / particles
     ys = YS[1:,:] / particles
-    plt.figure()
+    plt.figure(figsize=[12,6])
     plt.plot(x,yc[:,0],"r")
     plt.plot(x,ys[:,0],"g")
     plt.legend(["Heat Capacity", "Entropy Integral"])
@@ -98,19 +110,56 @@ if CS:
         
 if W:
     yw = YW[1:,:]
-    plt.figure()
+    plt.figure(figsize=[12,6])
     plt.plot(x,yw[:,0],"y")
     plt.plot(x,yw[:,0]+yw[:,1],"y-.")
     plt.plot(x,yw[:,0]-yw[:,1],"y-.")
     plt.xscale("log")
     plt.legend(["Plaquette Flux"])
     plt.show()
+
+if M:
+    ymx = YMx[1:,0] / particles
+    ymy = YMy[1:,0] / particles
+    ymz = YMz[1:,0] / particles
+    ymx2 = YMx2[1:,0] / particles
+    ymy2 = YMy2[1:,0] / particles
+    ymz2 = YMz2[1:,0] / particles
+
+    plt.figure(figsize=[12,6])
+    plt.plot(x,ymx[:,0],"c")
+    plt.plot(x,ymy[:,0],"y")
+    plt.plot(x,ymz[:,0],"m")
+    plt.legend([r"$M_x$", r"$M_y$", r"$M_z$"])
+    plt.plot(x,ymx[:,0]+ymx[:,1],"c-.")
+    plt.plot(x,ymx[:,0]-ymx[:,1],"c-.")
+    plt.plot(x,ymy[:,0]+ymy[:,1],"y-.")
+    plt.plot(x,ymy[:,0]-ymy[:,1],"y-.")
+    plt.plot(x,ymz[:,0]+ymz[:,1],"m-.")
+    plt.plot(x,ymz[:,0]-ymz[:,1],"m-.")
+    plt.xscale("log")
+    plt.show()
+
+    plt.figure(figsize=[12,6])
+    plt.plot(x,ymx2[:,0],"c")
+    plt.plot(x,ymy2[:,0],"y")
+    plt.plot(x,ymz2[:,0],"m")
+    plt.legend([r"$M_x^2$", r"$M_y^2$", r"$M_z^2$"])
+    plt.plot(x,ymx2[:,0]+ymx2[:,1],"c-.")
+    plt.plot(x,ymx2[:,0]-ymx2[:,1],"c-.")
+    plt.plot(x,ymy2[:,0]+ymy2[:,1],"y-.")
+    plt.plot(x,ymy2[:,0]-ymy2[:,1],"y-.")
+    plt.plot(x,ymz2[:,0]+ymz2[:,1],"m-.")
+    plt.plot(x,ymz2[:,0]-ymz2[:,1],"m-.")
+    plt.xscale("log")
+    plt.show()
+
         
 if Chi:
     ycx = YCHIx[1:,:] / particles
     ycy = YCHIy[1:,:] / particles
     ycz = YCHIz[1:,:] / particles
-    plt.figure()
+    plt.figure(figsize=[12,6])
     plt.plot(x,ycx[:,0],"c")
     plt.plot(x,ycy[:,0],"y")
     plt.plot(x,ycz[:,0],"m")
@@ -122,10 +171,10 @@ if Chi:
     plt.plot(x,ycz[:,0]+ycz[:,1],"m-.")
     plt.plot(x,ycz[:,0]-ycz[:,1],"m-.")
     plt.plot(x,Curie(x,K),"k:")
-    plt.plot(x,Dimerx(x,K),"c:")
-    plt.plot(x,Dimerz(x,K),"m:")
+    #plt.plot(x,Dimerx(x,K),"c:")
+    #plt.plot(x,Dimerz(x,K),"m:")
     plt.xscale("log")
-    plt.ylim([0,20])
+    plt.ylim([0,np.max(ycz[:,0])*1.5])
     plt.show()
         
 

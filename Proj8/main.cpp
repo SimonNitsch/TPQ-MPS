@@ -2,7 +2,7 @@
 #include <array>
 #include <vector>
 #include "itensor/all.h"
-#include "TPQ-MPS-v3-14/main.h"
+#include "TDVP-MPS/main.h"
 #include "TPQ-MPS-v3-07/main.h"
 #include <ios>
 #include <chrono>
@@ -36,25 +36,26 @@ int main(){
 
 int main(){
     std::ios_base::sync_with_stdio(false);
-    TPQ_MPS::Hamiltonian H_Details;
-    H_Details.set("K",-1.);
+    TDVP_MPS::Hamiltonian H_Details;
+    H_Details.set("K",1.);
     TPQ_MPS_old::Hamiltonian H_Details_old;
     H_Details_old.set("K",4./3.);
-    //H_Details.set("hz",0.15);
+    H_Details.set("hz",0.1);
     //H_Details.set("J",1);
 
-    int LX = 3;
+    int LX = 2;
     int LY = 2;
-    int auxiliaries = 0;
+    int auxiliaries = 1;
+    int sec_auxiliaries = 1;
 
     itensor::CustomSpin sites;
     itensor::SpinHalf sites_old;
     int spin = 1;
     std::string filename = "aaaaaaaaaa";
 
-    int TimeSteps = 50;
+    std::vector<int> timesteps= {5};
     int Evols = 30;
-    std::vector<double> intervals = {5,20,35,40};
+    std::vector<double> intervals = {1};
     int init_states = 32;
     int max_states = 128;
 
@@ -68,8 +69,10 @@ int main(){
     
 
 
-    auto Model = TPQ_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,"Triangular");
-    //Model.Tan_Evolution(TimeSteps,intervals,256,1,5);
+    auto Model = TDVP_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,sec_auxiliaries,"Triangular");
+    println(Model.H0);
+    Model.TPQ_MPS(timesteps,intervals,Evols,256,32,"TwoSite",0.005);
+    Model.Save("benis");
     //auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
     //itensor::PrintData(Model.H2);

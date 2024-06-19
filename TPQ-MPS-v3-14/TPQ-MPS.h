@@ -40,12 +40,12 @@ std::vector<double> operator-(std::vector<double>& v1, std::vector<double>& v2){
     return v;
 }
 
-std::vector<double> operator*(std::vector<double>& v, double x){
+std::vector<double> operator/(std::vector<double>& v, double x){
     std::vector<double> vx;
     vx.reserve(v.size());
 
     for (auto& i : v){
-        vx.push_back(i*x);
+        vx.push_back(i/x);
     }
     return vx;
 }
@@ -62,10 +62,11 @@ class Kitaev_Model{
     public:
     AutoMPO ampo;
     int Lattice_Type; // 1 for Honeycomb, 2 for Triangular, 3 for Periodic Honeycomb
-    bool Calc_Type; // true for DMRG, false for TDVP
+    bool CalcDMRG = false;
+    bool CalcTDVP = false;
 
     public:
-    MPO H0;
+    MPO H0, H0x, H0y, H0z;
     std::array<MPO,3> M;
     std::array<MPO,3> M2;
     Hamiltonian H_Details;
@@ -73,6 +74,7 @@ class Kitaev_Model{
     CustomSpin sitestan;
     MPO H_flux;
     MPS Htan;
+    int LX, LY, aux, sec_aux;
 
     private:
     double GSE;
@@ -91,42 +93,45 @@ class Kitaev_Model{
     std::vector<std::array<double,2>> Chiz;
 
 
-    std::array<int,3> get_neighbour_data_hex(int LX, int LY, int pos);
-    std::array<int,3> get_neighbour_data_hex_periodic(int LX, int LY, int pos);
-    std::array<int,3> get_neighbour_data_hex_rev(int LX, int LY, int pos);
-    std::array<int,3> get_neighbour_data_hex_rev2(int LX, int LY, int pos);
-    std::array<int,3> get_neighbour_data_tri(int LX, int LY, int pos);
+    std::array<int,3> get_neighbour_data_hex(int pos);
+    std::array<int,3> get_neighbour_data_hex_periodic(int pos);
+    std::array<int,3> get_neighbour_data_hex_rev(int pos);
+    std::array<int,3> get_neighbour_data_hex_rev2(int pos);
+    std::array<int,3> get_neighbour_data_tri(int pos);
 
-    std::array<int,3> get_neighbour_data(int LX, int LY, int pos){
+    std::array<int,3> get_neighbour_data(int pos){
         std::array<int,3> n;
         if (Lattice_Type == 1){
-            n = get_neighbour_data_hex(LX,LY,pos);
+            n = get_neighbour_data_hex(pos);
         } else if (Lattice_Type == 2){
-            n = get_neighbour_data_tri(LX,LY,pos);
+            n = get_neighbour_data_tri(pos);
         } else if (Lattice_Type == 3){
-            n = get_neighbour_data_hex_periodic(LX,LY,pos);
+            n = get_neighbour_data_hex_periodic(pos);
         } else if (Lattice_Type == 4){
-            n = get_neighbour_data_hex_rev(LX,LY,pos);
+            n = get_neighbour_data_hex_rev(pos);
         } else if (Lattice_Type == 5){
-            n = get_neighbour_data_hex_rev2(LX,LY,pos);
+            n = get_neighbour_data_hex_rev2(pos);
         }
         return n;
     }
 
     public:
-    void add_kitaev_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
-    void add_magnetic_interaction(int LX, int LY, int aux);
-    void add_heisenberg_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
-    void add_gamma_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
-    void add_gammaq_interaction(int LX, int LY, std::vector<int>& p_vec, int aux);
-    MPO honeycomb_flux_operator(int LX, int LY, int aux);
-    MPO honeycomb_flux_operator_half(int LX, int LY, int aux);
-    std::array<std::array<MPO,3>,2> magnetization_operators(int LX, int LY, int aux);
+    void add_kitaev_interaction(std::vector<int>& p_vec, int aux, int sec_aux);
+    void add_magnetic_interaction(int aux, int sec_aux);
+    void add_heisenberg_interaction(std::vector<int>& p_vec, int aux, int sec_aux);
+    void add_gamma_interaction(std::vector<int>& p_vec, int aux, int sec_aux);
+    void add_gammaq_interaction(std::vector<int>& p_vec, int aux, int sec_aux);
+    MPO honeycomb_flux_operator(int aux, int sec_aux);
+    MPO honeycomb_flux_operator_half(int aux, int sec_aux);
+    std::array<std::array<MPO,3>,2> magnetization_operators(int aux, int sec_aux);
+    int aux_num(int pos, int aux, int sec_aux);
     
     private:
     std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M);
     
-    int tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec, std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2, MPS& psi, Cplx& t, int TimeSteps, Args& args, Sweeps& sweeps, double& cb);
+    int tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec,
+    std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
+    MPO& H0, MPS& psi, Cplx& t, int TimeSteps, Args& args, Sweeps& sweeps, double& cb);
 
     void chi_int(MPS& psi, double n, double t, std::array<std::vector<double>,3>& chi_vec, double step, Sweeps& sweeps, Args& args);
 
@@ -161,12 +166,16 @@ class Kitaev_Model{
 
 
     public:
-    Kitaev_Model(int LX, int LY, Hamiltonian H_Details, int DoubleSpin, int aux, std::string shape){
+    Kitaev_Model(int LX, int LY, Hamiltonian H_Details, int DoubleSpin, int aux, int sec_aux, std::string shape){
         this -> sites = CustomSpinNitsch((LX*LY+2*aux),{"2S=",DoubleSpin,"ConserveQNs=",false});
         this -> ampo = AutoMPO(sites);
         this -> H_Details = H_Details;
         this -> dims = DoubleSpin + 1;
         this -> sitestan = CustomSpin((LX*LY+2*aux),{"2S=",(dims*dims-1),"ConserveQNs=",false});
+        this -> LX = LX;
+        this -> LY = LY;
+        this -> aux = aux;
+        this -> sec_aux = sec_aux;
 
         std::vector<int> full_points;
         if (shape == "Honeycomb" || shape == "HoneycombPeriodic" || shape == "HoneycombReverse" || shape == "HoneycombReverse2"){
@@ -201,22 +210,22 @@ class Kitaev_Model{
 
         SusceptIntegral = false;
 
-        add_kitaev_interaction(LX,LY,full_points,aux);
-        add_magnetic_interaction(LX,LY,aux);
-        add_heisenberg_interaction(LX,LY,full_points,aux);
-        add_gamma_interaction(LX,LY,full_points,aux);
-        add_gammaq_interaction(LX,LY,full_points,aux);
+        add_kitaev_interaction(full_points,aux,sec_aux);
+        add_magnetic_interaction(aux,sec_aux);
+        add_heisenberg_interaction(full_points,aux,sec_aux);
+        add_gamma_interaction(full_points,aux,sec_aux);
+        add_gammaq_interaction(full_points,aux,sec_aux);
 
         if (DoubleSpin == 1){
-            this -> H_flux = honeycomb_flux_operator_half(LX,LY,aux);
+            this -> H_flux = honeycomb_flux_operator_half(aux,sec_aux);
         } 
         else{        
-            this -> H_flux = honeycomb_flux_operator(LX,LY,aux);
+            this -> H_flux = honeycomb_flux_operator(aux,sec_aux);
         }
         //PrintData(H_flux);
         
         this -> H0 = toMPO(this -> ampo);
-        auto Ms = magnetization_operators(LX,LY,aux);
+        auto Ms = magnetization_operators(aux,sec_aux);
         M = Ms[0];
         M2 = Ms[1];
 
@@ -234,7 +243,7 @@ class Kitaev_Model{
     }
 
 
-    void Time_Evolution(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites=256, int init_rand_sites=32, std::string TDVP_Type="TwoSite");
+    void Time_Evolution(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites=256, int init_rand_sites=32, std::string TDVP_Type="TwoSite", double SusceptDiff=0);
 
     Hamiltonian Get_Constants(){
         return H_Details;
@@ -245,12 +254,12 @@ class Kitaev_Model{
     }
 
     void Save(std::string x){
-        if (Calc_Type){
-            std::string xGSE = x + "_GSE";
+        std::filesystem::create_directory(x);
+        if (CalcDMRG){
+            std::string xGSE = x + "/" + "GSE";
             save_data(xGSE,GSE);
         } 
-        else {
-            std::filesystem::create_directory(x);
+        if (CalcTDVP) {
             std::string xE = x + "/" + "E";
             std::string xC = x + "/" + "C";
             std::string xS = x + "/" + "S";
@@ -288,7 +297,7 @@ class Kitaev_Model{
 
     
     MPS DMRG(int Sweeps=10){
-        Calc_Type = true;
+        CalcDMRG = true;
         auto psi0 = randomMPS(sites,16);
         auto [energy, psi] = dmrg(H0,psi0,Sweeps,{"Quiet",true});
         GSE = energy;

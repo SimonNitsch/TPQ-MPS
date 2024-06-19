@@ -379,6 +379,7 @@ double Kitaev_Model::calculate_chi(MPS& Hexptan, MPS& Hexptaninv, std::string sp
 void Kitaev_Model::Tan_Evolution(int TimeSteps, std::vector<double> intervals, int max_sites, int KrylovExpansions, int SusceptRatio){
     auto t0 = std::chrono::system_clock::now();
     this -> SusceptIntegral = (SusceptRatio != 0);
+    this -> CalcTDVP = true;
 
     auto Hexp1 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1+Cplx_i));
     auto Hexp2 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1-Cplx_i));
