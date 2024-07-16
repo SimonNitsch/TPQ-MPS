@@ -357,9 +357,9 @@ std::vector<std::array<double,2>> Kitaev_Model::Mean(std::vector<std::vector<dou
     int M0 = M[0].size();
     int M1 = M.size();
     std::vector<std::array<double,2>> vec;
-    vec.reserve(M0);
+    vec.reserve(M0-1);
     
-    for (int i = 0; i != M0; i++){
+    for (int i = 1; i != M0; i++){
         double v = 0;
         double v2 = 0;
         for (int j = 0; j != M1; j++){
@@ -458,6 +458,19 @@ void Kitaev_Model::save_data(std::string filename, std::vector<std::array<T,n>>&
 
 
 template<typename T>
+void Kitaev_Model::save_data(std::string filename, std::vector<T>& vec){
+    std::vector<std::array<T,1>> arrvec;
+    arrvec.reserve(vec.size());
+
+    for (auto& v : vec){
+        std::array<T,1> a = {v};
+        arrvec.push_back(a);
+    }
+    save_data(filename,arrvec);
+}
+
+
+template<typename T>
 void Kitaev_Model::save_data(std::string filename, T v){
     std::vector<std::array<T,1>> vec;
     std::array<T,1> v_array = {v};
@@ -508,7 +521,7 @@ void Kitaev_Model::chi_int(itensor::MPS& psi, double n, double t, std::array<std
 
 
 
-void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites, int init_rand_sites, std::string TDVP_Type, double SusceptDiff){
+void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites, int init_rand_sites, std::string TDVP_Type, double SusceptDiff, std::string Suscepts){
     this->CalcTDVP = true;
     this->SusceptIntegral = SusceptDiff != 0;
 
@@ -517,23 +530,37 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
         double hy = H_Details.get("hy");
         double hz = H_Details.get("hz");
 
-        H_Details.set("hx",hx+SusceptDiff);
+        H_Details.set("hx",0);
+        H_Details.set("hy",0);
+        H_Details.set("hz",0);
+
+        H_Details.set("hx",SusceptDiff);
         add_magnetic_interaction(aux,sec_aux);
         H0x = toMPO(ampo);
 
-        H_Details.set("hx",hx);
-        H_Details.set("hy",hy+SusceptDiff);
+        H_Details.set("hx",-1.*SusceptDiff);
+        H_Details.set("hy",SusceptDiff);
         add_magnetic_interaction(aux,sec_aux);
         H0y = toMPO(ampo);
 
-        H_Details.set("hy",hy);
-        H_Details.set("hz",hz+SusceptDiff);
+        H_Details.set("hx",0);
+        H_Details.set("hy",-1.*SusceptDiff);
+        H_Details.set("hz",SusceptDiff);
         add_magnetic_interaction(aux,sec_aux);
         H0z = toMPO(ampo);
 
+        H_Details.set("hy",0);
+        H_Details.set("hz",-1*SusceptDiff);
+        add_magnetic_interaction(aux,sec_aux);
+
+        H_Details.set("hx",hx);
+        H_Details.set("hy",hy);
         H_Details.set("hz",hz);
     }
 
+    Calsusx = Suscepts.find("x") != std::string::npos;
+    Calsusy = Suscepts.find("y") != std::string::npos;
+    Calsusz = Suscepts.find("z") != std::string::npos;
     
     if (timesteps.size() != intervals.size()){
         std::invalid_argument("Time Steps vector and Intervals vector have to have the same length");
@@ -542,6 +569,7 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
     for (int& i : timesteps){
         entries += i;
     }
+    xdata.reserve(entries-1);
 
     std::vector<std::vector<double>> Energies;
     Energies.reserve(Evols);
@@ -621,9 +649,16 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
     std::cout << "TDVP Technique used: " << TDVP_Type << "\n";
 
     std::vector<itensor::Cplx> T;
+    double xsum = 0.;
     for (int i = 0; i != timesteps.size(); i++){
         itensor::Cplx t = -0.5 * intervals[i] / static_cast<double>(timesteps[i]) * itensor::Cplx_1;
         T.emplace_back(t);
+
+        for (int j = 0; j != timesteps[i]; j++){
+            double delb = std::real(t) * -2.;
+            xsum += delb;
+            xdata.push_back(1./xsum);
+        }
     }
     auto t0 = std::chrono::system_clock::now();
     int max_bond = 0;
@@ -698,18 +733,29 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
             }
 
             for (int j = 0; j != timesteps.size(); j++){
-                tdvp_loop(Mag_vec_nextx,Mag_vec_next2,H0x,psix,T[j],timesteps[j],tdvp_args,Sweeps);
-                tdvp_loop(Mag_vec_nexty,Mag_vec_next2,H0y,psiz,T[j],timesteps[j],tdvp_args,Sweeps);
-                tdvp_loop(Mag_vec_nextz,Mag_vec_next2,H0z,psiy,T[j],timesteps[j],tdvp_args,Sweeps);
+                if (Calsusx){
+                    tdvp_loop(Mag_vec_nextx,Mag_vec_next2,H0x,psix,T[j],timesteps[j],tdvp_args,Sweeps);
+                }
+                if (Calsusy){
+                    tdvp_loop(Mag_vec_nexty,Mag_vec_next2,H0y,psiz,T[j],timesteps[j],tdvp_args,Sweeps);
+                }
+                if (Calsusz){
+                    tdvp_loop(Mag_vec_nextz,Mag_vec_next2,H0z,psiy,T[j],timesteps[j],tdvp_args,Sweeps);
+                }
             }
 
-            std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
-            std::vector<double> chiy = Mag_vec_nexty[1] - Mag_vec[1];
-            std::vector<double> chiz = Mag_vec_nextz[2] - Mag_vec[2];
-            Suscecptibility[0].push_back(chix/SusceptDiff);
-            Suscecptibility[1].push_back(chiy/SusceptDiff);
-            Suscecptibility[2].push_back(chiz/SusceptDiff);
-
+            if (Calsusx){
+                std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
+                Suscecptibility[0].push_back(chix/SusceptDiff);
+            }
+            if (Calsusy){
+                std::vector<double> chiy = Mag_vec_nexty[1] - Mag_vec[1];
+                Suscecptibility[1].push_back(chiy/SusceptDiff);
+            }
+            if (Calsusz){
+                std::vector<double> chiz = Mag_vec_nextz[2] - Mag_vec[2];
+                Suscecptibility[2].push_back(chiz/SusceptDiff);
+            }
         }
 
         for (int j = 0; j != 3; j++){
@@ -728,6 +774,8 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
 
     }
 
+
+
     E = Mean(Energies);
     Cv = Mean(Capacity);
     S = Mean(Entropy);
@@ -742,9 +790,15 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
     Mz2 = Mean(Magnetization2[2]);
 
     if (SusceptIntegral){
-        Chix = Mean(Suscecptibility[0]);
-        Chiy = Mean(Suscecptibility[1]);
-        Chiz = Mean(Suscecptibility[2]);
+        if (Calsusx){
+            Chix = Mean(Suscecptibility[0]);
+        }
+        if (Calsusy){
+            Chiy = Mean(Suscecptibility[1]);
+        }
+        if (Calsusz){
+            Chiz = Mean(Suscecptibility[2]);
+        }
     }
 
     auto t3 = std::chrono::system_clock::now();

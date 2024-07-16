@@ -6,7 +6,7 @@ import os
     
 intervals = np.array([3,5,12,15,25,25,25])
 particles = 8
-filename = "SusTest/Sus2/"
+filename = "SusTest/Sus5/"
 filename2 = "Classic"
 K = 1.
     
@@ -116,15 +116,16 @@ if W:
     plt.plot(x,yw[:,0]-yw[:,1],"y-.")
     plt.xscale("log")
     plt.legend(["Plaquette Flux"])
+    plt.xlabel("T")
     plt.show()
 
 if M:
-    ymx = YMx[1:,0] / particles
-    ymy = YMy[1:,0] / particles
-    ymz = YMz[1:,0] / particles
-    ymx2 = YMx2[1:,0] / particles
-    ymy2 = YMy2[1:,0] / particles
-    ymz2 = YMz2[1:,0] / particles
+    ymx = YMx[1:,:] / particles
+    ymy = YMy[1:,:] / particles
+    ymz = YMz[1:,:] / particles
+    ymx2 = YMx2[1:,:] / particles
+    ymy2 = YMy2[1:,:] / particles
+    ymz2 = YMz2[1:,:] / particles
 
     plt.figure(figsize=[12,6])
     plt.plot(x,ymx[:,0],"c")
@@ -138,6 +139,7 @@ if M:
     plt.plot(x,ymz[:,0]+ymz[:,1],"m-.")
     plt.plot(x,ymz[:,0]-ymz[:,1],"m-.")
     plt.xscale("log")
+    plt.xlabel("T")
     plt.show()
 
     plt.figure(figsize=[12,6])
@@ -152,6 +154,7 @@ if M:
     plt.plot(x,ymz2[:,0]+ymz2[:,1],"m-.")
     plt.plot(x,ymz2[:,0]-ymz2[:,1],"m-.")
     plt.xscale("log")
+    plt.xlabel("T")
     plt.show()
 
         
@@ -171,6 +174,7 @@ if Chi:
     plt.plot(x,ycz[:,0]+ycz[:,1],"m-.")
     plt.plot(x,ycz[:,0]-ycz[:,1],"m-.")
     plt.plot(x,Curie(x,K),"k:")
+    plt.xlabel("T")
     #plt.plot(x,Dimerx(x,K),"c:")
     #plt.plot(x,Dimerz(x,K),"m:")
     plt.xscale("log")
@@ -280,5 +284,5 @@ plt.xscale("log")
 plt.show()
 
 
-
 '''
+

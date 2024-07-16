@@ -53,9 +53,9 @@ int main(){
     int spin = 1;
     std::string filename = "aaaaaaaaaa";
 
-    std::vector<int> timesteps= {5};
-    int Evols = 30;
-    std::vector<double> intervals = {1};
+    std::vector<int> timesteps= {5,10};
+    int Evols = 1;
+    std::vector<double> intervals = {1,9};
     int init_states = 32;
     int max_states = 128;
 
@@ -71,8 +71,11 @@ int main(){
 
     auto Model = TDVP_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,sec_auxiliaries,"Triangular");
     println(Model.H0);
-    Model.TPQ_MPS(timesteps,intervals,Evols,256,32,"TwoSite",0.005);
-    Model.Save("benis");
+    PrintData(Model.M[0]);
+    PrintData(Model.M[1]);
+    //Model.TPQ_MPS(timesteps,intervals,Evols,256,32,"TwoSite",0.005,"z");
+    Model.tanTRG(timesteps,intervals);
+    Model.Save("benis3");
     //auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
     //itensor::PrintData(Model.H2);

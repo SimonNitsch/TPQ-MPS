@@ -271,12 +271,13 @@ MPS Kitaev_Model::mps_to_tanmps(MPS& X){
 
 
 std::vector<std::array<double,2>> Kitaev_Model::mean_wrap(std::vector<double>& vec){
+    std::vector<double> cutvec(vec.begin()+1,vec.end());
     std::vector<std::array<double,2>> wrap;
-    wrap.reserve(vec.size());
+    wrap.reserve(cutvec.size());
 
-    for (auto& i : vec){
-        std::array<double,2> part{i,0.};
-        wrap.push_back(part);
+    for (auto& i : cutvec){
+            std::array<double,2> part{i,0.};
+            wrap.push_back(part);
     }
     return wrap;
 }
@@ -285,11 +286,11 @@ std::vector<std::array<double,2>> Kitaev_Model::mean_wrap(std::vector<double>& v
 
 
 
-int Kitaev_Model::tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPS& Hexpinvtan, MPO& H0tan,
+int Kitaev_Model::tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan, MPO& H2tan,
 std::array<MPO,3>& Mtan, std::array<MPO,3>& M2tan, Sweeps& sweeps, Args& tdvp_args,
 std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec,
 std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
-std::array<std::vector<double>,3>& Chi_vec, MPO& Hfluxtan, double& cb, int KrylovExpansions, int SusceptRatio){
+std::array<std::vector<double>,3>& Chi_vec, MPO& Hfluxtan, double& cb, int KrylovExpansions){
 
     int max_bond = 0;
     for (int i = 0; i != steps; i++){
@@ -306,28 +307,15 @@ std::array<std::vector<double>,3>& Chi_vec, MPO& Hfluxtan, double& cb, int Krylo
         auto stupid_result = tdvp(Hexptan,H0tan,-0.5*dt*Cplx_1,sweeps,tdvp_args);
 
         cb += dt;
-        double current_energy = std::real(innerC(Hexptan,H0tan,Hexptan));
-        double curc = cb * cb * (E_vec.back() - current_energy) / dt;
+        double cure = std::real(innerC(Hexptan,H0tan,Hexptan));
+        double curc = cb * cb * std::real(innerC(Hexptan,H2tan,Hexptan) - cure * cure);
         double curs = S_vec.back() + dt * 0.5 * (curc/cb + C_vec.back()/(cb-dt));
         double curw = std::real(innerC(Hexptan,Hfluxtan,Hexptan));
 
-        E_vec.push_back(current_energy);
+        E_vec.push_back(cure);
         C_vec.push_back(curc);
         S_vec.push_back(curs);
         W_vec.push_back(curw);
-
-        if (SusceptIntegral){
-            auto stupid_result2 = tdvp(Hexpinvtan,H0tan,0.5*dt*Cplx_1,sweeps,tdvp_args);
-
-            if (i % SusceptRatio == (SusceptRatio-1)){
-                Chi_vec[0].push_back(calculate_chi(Hexptan,Hexpinvtan,"Sx"));
-                std::cout << "Chix - " << Chi_vec[0].back();
-                Chi_vec[1].push_back(calculate_chi(Hexptan,Hexpinvtan,"Sy"));
-                std::cout << "; Chiy - " << Chi_vec[1].back();
-                Chi_vec[2].push_back(calculate_chi(Hexptan,Hexpinvtan,"Sz"));
-                std::cout << "; Chiz - " << Chi_vec[2].back() << "\n" << std::flush;
-            }
-        }
 
         for (int indi = 0; indi != 3; indi++){
             std::complex<double> m = innerC(Hexptan,Mtan[indi],Hexptan);
@@ -376,13 +364,15 @@ double Kitaev_Model::calculate_chi(MPS& Hexptan, MPS& Hexptaninv, std::string sp
 
 
 
-void Kitaev_Model::tanTRG(int TimeSteps, std::vector<double> intervals, int max_sites, int KrylovExpansions, int SusceptRatio){
+void Kitaev_Model::tanTRG(std::vector<int> timesteps, std::vector<double> intervals, int max_sites, int KrylovExpansions){
     auto t0 = std::chrono::system_clock::now();
-    this -> SusceptIntegral = (SusceptRatio != 0);
     this -> CalcTDVP = true;
 
-    auto Hexp1 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1+Cplx_i));
-    auto Hexp2 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1-Cplx_i));
+    MPO H2 = nmultMPO(H0,prime(H0));
+    MPO H2tan = mpo_to_tanmpo(H2);
+
+    auto Hexp1 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(timesteps[0])*(Cplx_1+Cplx_i));
+    auto Hexp2 = toExpH(ampo,0.25*intervals[0]/static_cast<double>(timesteps[0])*(Cplx_1-Cplx_i));
     auto Hexp = nmultMPO(Hexp2,prime(Hexp1));
     auto Hexptan = mpo_to_tanmps(Hexp);
     Hexptan.orthogonalize();
@@ -402,62 +392,57 @@ void Kitaev_Model::tanTRG(int TimeSteps, std::vector<double> intervals, int max_
         std::cout << i << " ";
     }
     std::cout << "\n\n";
-    std::cout << "Time Steps per Interval: " << TimeSteps << "\n";
+    std::cout << "Time Steps: ";
+    for (auto& i : timesteps){
+        std::cout << i << " ";
+    }
+    std::cout << "\n\n";
     std::cout << "Maximum Sites: " << max_sites << "\n";
     std::cout << "Number of Krylov Expansions: " << KrylovExpansions << "\n" << std::flush;
-    if (SusceptIntegral){
-        std::cout << "Susceptibility is calculated via correlation\n" << std::flush;
-    }
-
-    MPS Hexpinvtan;
-    if (SusceptIntegral){
-        auto Hexpinv1 = toExpH(ampo,-0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1+Cplx_i));
-        auto Hexpinv2 = toExpH(ampo,-0.25*intervals[0]/static_cast<double>(TimeSteps)*(Cplx_1-Cplx_i));
-        MPO Hexpinv = nmultMPO(Hexpinv2,prime(Hexpinv1));  
-        Hexpinvtan = mpo_to_tanmps(Hexpinv);  
-        Hexpinvtan.orthogonalize();
-        Hexpinvtan.normalize();
-    }
-
-
     auto sweeps = Sweeps(1);
     sweeps.maxdim() = max_sites;
     sweeps.cutoff() = 1e-8;
     sweeps.niter() = 30;
 
     auto tdvp_args = Args({"Silent",true,"ErrGoal",1E-7});
+
+    int entries = 1;
+    for (int& i : timesteps){
+        entries += i;
+    }
+    xdata.reserve(entries-1);
     
     std::vector<std::vector<double>> Energies;
     std::vector<double> E_vec;
-    E_vec.reserve((TimeSteps) * intervals.size() + 1);
+    E_vec.reserve(entries);
 
     std::vector<std::vector<double>> Capacities;
     std::vector<double> C_vec;
-    C_vec.reserve((TimeSteps) * intervals.size() + 1);
+    C_vec.reserve(entries);
 
     std::vector<std::vector<double>> Entropies;
     std::vector<double> S_vec;
-    S_vec.reserve((TimeSteps) * intervals.size() + 1);
+    S_vec.reserve(entries);
 
     std::vector<std::vector<double>> Flux;
     std::vector<double> W_vec;
-    W_vec.reserve((TimeSteps) * intervals.size() + 1);
+    W_vec.reserve(entries);
 
     std::array<std::vector<double>,3> Susceptibility;
     for (auto& i : Susceptibility){
-        i.reserve(TimeSteps * intervals.size() + 1);
+        i.reserve(entries);
         i.push_back(0.);
     }
 
     std::array<std::vector<double>,3> Magnetization;
     for (auto& i : Magnetization){
-        i.reserve(TimeSteps * intervals.size() + 1);
+        i.reserve(entries);
         i.push_back(0.);
     }
 
     std::array<std::vector<double>,3> Magnetization2;
     for (auto& i : Magnetization2){
-        i.reserve(TimeSteps * intervals.size() + 1);
+        i.reserve(entries);
         i.push_back(0.);
     }
 
@@ -466,19 +451,25 @@ void Kitaev_Model::tanTRG(int TimeSteps, std::vector<double> intervals, int max_
     W_vec.push_back(0.);
     W_vec.push_back(std::real(innerC(Hexptan,Hfluxtan,Hexptan)));
 
-    double dt1 = intervals[0] / static_cast<double>(TimeSteps);
-    double cur_beta = dt1;
+    std::vector<double> dT;
+    double xsum = 0.;
+    for (int i = 0; i != timesteps.size(); i++){
+        double t = intervals[i] / static_cast<double>(timesteps[i]);
+        dT.emplace_back(t);
+
+        for (int j = 0; j != timesteps[i]; j++){
+            double delb = t;
+            xsum += delb;
+            xdata.push_back(1./xsum);
+        }
+    }
+
+    double cur_beta = dT[0];
     
     C_vec.push_back(0.);
     C_vec.push_back(cur_beta * (E_vec[1] - E_vec[0]));
     S_vec.push_back(0.);
-    S_vec.push_back(dt1 * 0.5 * C_vec[1] / cur_beta);
-
-    if (SusceptIntegral){
-        Susceptibility[0].push_back(calculate_chi(Hexptan,Hexpinvtan,"Sx"));
-        Susceptibility[1].push_back(calculate_chi(Hexptan,Hexpinvtan,"Sy"));
-        Susceptibility[2].push_back(calculate_chi(Hexptan,Hexpinvtan,"Sz"));
-    }
+    S_vec.push_back(dT[0] * 0.5 * C_vec[1] / cur_beta);
 
     for (int indi = 0; indi != 3; indi++){
         std::complex<double> m = innerC(Hexptan,Mtan[indi],Hexptan);
@@ -488,15 +479,14 @@ void Kitaev_Model::tanTRG(int TimeSteps, std::vector<double> intervals, int max_
     }
 
 
-    int max_bond = tan_tdvp_loop(TimeSteps-1,dt1,Hexptan,Hexpinvtan,H0tan,Mtan,M2tan,sweeps,tdvp_args,
+    int max_bond = tan_tdvp_loop(timesteps[0]-1,dT[0],Hexptan,H0tan,H2tan,Mtan,M2tan,sweeps,tdvp_args,
                                 E_vec,C_vec,S_vec,W_vec,Magnetization,Magnetization2,Susceptibility,
-                                Hfluxtan,cur_beta,KrylovExpansions,SusceptRatio);
+                                Hfluxtan,cur_beta,KrylovExpansions);
 
-    for (auto i = intervals.begin()+1; i != intervals.end(); i++){
-        double dt = *i / static_cast<double>(TimeSteps);
-        int m2 = tan_tdvp_loop(TimeSteps,dt,Hexptan,Hexpinvtan,H0tan,Mtan,M2tan,sweeps,tdvp_args,
+    for (auto i = 1; i != intervals.size(); i++){
+        int m2 = tan_tdvp_loop(timesteps[i],dT[i],Hexptan,H0tan,H2tan,Mtan,M2tan,sweeps,tdvp_args,
                                 E_vec,C_vec,S_vec,W_vec,Magnetization,Magnetization2,Susceptibility,
-                                Hfluxtan,cur_beta,KrylovExpansions,SusceptRatio);
+                                Hfluxtan,cur_beta,KrylovExpansions);
         max_bond = std::max(max_bond,m2);
     }
 

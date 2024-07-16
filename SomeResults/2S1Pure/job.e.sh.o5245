@@ -1,0 +1,36 @@
+Spin 1/2 System
+Lattice Type: HoneycombPeriodic
+LX = 2, LY = 6
+Auxiliary Sites: 0
+
+Hamiltonian Parameters 
+Kx: 1
+Ky: 1
+Kz: 1
+J: 0
+hx: 0
+hy: 0
+hz: 0
+Gamma: 0
+GammaQ: 0
+
+
+Intervals: 5 8 12 15 20 
+
+Time Steps per Interval: 70
+Maximum Sites: 2048
+Number of Krylov Expansions: 0
+Finished Simulation, Time Needed: 17 Hours, 30 Minutes, 11 Seconds
+
+Maximum MPS bond dimension: 1698
+
+Data saved as: 2by6/E.txt
+Data saved as: 2by6/C.txt
+Data saved as: 2by6/S.txt
+Data saved as: 2by6/W.txt
+Data saved as: 2by6/Mx.txt
+Data saved as: 2by6/My.txt
+Data saved as: 2by6/Mz.txt
+Data saved as: 2by6/Mx2.txt
+Data saved as: 2by6/My2.txt
+Data saved as: 2by6/Mz2.txt

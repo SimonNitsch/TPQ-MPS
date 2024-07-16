@@ -15,6 +15,7 @@
 #include "Hamiltonian.h"
 #include <exception>
 #include <filesystem>
+#include <climits>
 #include "customspin_nitsch.h"
 #include "TDVP/basisextension.h"
 #pragma once
@@ -92,6 +93,11 @@ class Kitaev_Model{
     std::vector<std::array<double,2>> Chiy;
     std::vector<std::array<double,2>> Chiz;
 
+    std::vector<double> xdata;
+
+    bool Calsusx = false;
+    bool Calsusy = false;
+    bool Calsusz = false;
 
     std::array<int,3> get_neighbour_data_hex(int pos);
     std::array<int,3> get_neighbour_data_hex_periodic(int pos);
@@ -115,7 +121,6 @@ class Kitaev_Model{
         return n;
     }
 
-    public:
     void add_kitaev_interaction(std::vector<int>& p_vec, int aux, int sec_aux);
     void add_magnetic_interaction(int aux, int sec_aux);
     void add_heisenberg_interaction(std::vector<int>& p_vec, int aux, int sec_aux);
@@ -126,7 +131,6 @@ class Kitaev_Model{
     std::array<std::array<MPO,3>,2> magnetization_operators(int aux, int sec_aux);
     int aux_num(int pos, int aux, int sec_aux);
     
-    private:
     std::vector<std::array<double,2>> Mean(std::vector<std::vector<double>>& M);
     
     int tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec,
@@ -140,6 +144,9 @@ class Kitaev_Model{
 
     template<std::size_t n, typename T>
     void save_data(std::string filename, std::vector<std::array<T,n>>& vec);
+
+    template<typename T>
+    void save_data(std::string filename, std::vector<T>& vec);
     
     template<typename T>
     void save_data(std::string filename, T v);
@@ -150,20 +157,18 @@ class Kitaev_Model{
 
     int dims;
 
-    public:
     MPS mpo_to_tanmps(MPO& H);
     MPO tanmps_to_mpo(MPS& X);
     MPO mpo_to_tanmpo(MPO& H);
     MPS mps_to_tanmps(MPS& X);
 
-    int tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPS& Hexpinvtan, MPO& H0tan,
-    std::array<MPO,3>& Mtan, std::array<MPO,3>& M2tan, Sweeps& sweeps, Args& tdvp_args,
+    int tan_tdvp_loop(int steps, double dt, MPS& Hexptan, MPO& H0tan, MPO& H2tan,
+    std::array<MPO,3>& Mtan, std::array<MPO,3>& M2tan, itensor::Sweeps& sweeps, Args& tdvp_args,
     std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec,
     std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
-    std::array<std::vector<double>,3>& Chi_vec, MPO& Hfluxtan, double& cb, int KrylovExpansions, int SusceptRatio);
+    std::array<std::vector<double>,3>& Chi_vec, MPO& Hfluxtan, double& cb, int KrylovExpansions);
     bool SusceptIntegral;
 
-    void tanTRG(int TimeSteps, std::vector<double> intervals, int max_sites=256, int KrylovExpansions=0, int SusceptRatio=0);
     double calculate_chi(MPS& Hexp, MPS& Hexpinv, std::string spin);
     std::vector<std::array<double,2>> mean_wrap(std::vector<double>& vec);
 
@@ -235,18 +240,21 @@ class Kitaev_Model{
         std::cout << "Spin " << DoubleSpin << "/2 System" << "\n";
         std::cout << "Lattice Type: " << shape << "\n";
         std::cout << "LX = " << LX << ", LY = " << LY << "\n";
-        std::cout << "Auxiliary Sites: " << aux << "\n\n";
+        std::cout << "Auxiliary Sites: " << aux << "\n";
+        std::cout << "Secondary Auxiliary Sites: " << sec_aux << "\n\n";
         std::cout << "Hamiltonian Parameters \n";
         this->H_Details.print();
         std::cout << "\n\n";
 
+    }
 
-        
-
+    Kitaev_Model(int LX, int LY, Hamiltonian H_Details, int DoubleSpin, std::string shape){
+        Kitaev_Model(LX,LY,H_Details,DoubleSpin,0,0,shape);
     }
 
 
-    void TPQ_MPS(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites=256, int init_rand_sites=32, std::string TDVP_Type="TwoSite", double SusceptDiff=0);
+    void TPQ_MPS(std::vector<int> timesteps, std::vector<double> intervals, int Evols, int max_sites=512, int init_rand_sites=64, std::string TDVP_Type="TwoSite", double SusceptDiff=0, std::string Suscepts="xyz");
+    void tanTRG(std::vector<int> timesteps, std::vector<double> intervals, int max_sites=256, int KrylovExpansions=0);
 
     Hamiltonian Get_Constants(){
         return H_Details;
@@ -263,6 +271,7 @@ class Kitaev_Model{
             save_data(xGSE,GSE);
         } 
         if (CalcTDVP) {
+            std::string xd = x + "/" + "xdata";
             std::string xE = x + "/" + "E";
             std::string xC = x + "/" + "C";
             std::string xS = x + "/" + "S";
@@ -274,6 +283,7 @@ class Kitaev_Model{
             std::string xcy2 = x + "/" + "My2";
             std::string xcz2 = x + "/" + "Mz2";
 
+            save_data(xd,xdata);
             save_data(xE,E);
             save_data(xC,Cv);
             save_data(xS,S);
@@ -290,9 +300,15 @@ class Kitaev_Model{
                 std::string xchiy = x + "/" + "Chiy";
                 std::string xchiz = x + "/" + "Chiz";
 
-                save_data(xchix,Chix);
-                save_data(xchiy,Chiy);
-                save_data(xchiz,Chiz);
+                if (Calsusx){
+                    save_data(xchix,Chix);
+                }
+                if (Calsusy){
+                    save_data(xchiy,Chiy);
+                }
+                if (Calsusz){
+                    save_data(xchiz,Chiz);
+                }
             }
         }
         

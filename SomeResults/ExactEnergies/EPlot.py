@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-txtname = "Case4874.txt"
+txtname = "Case5504.txt"
 foldername = "/Users/simon/Documents/TPQ-MPS/SomeResults/ExactEnergies/"
 particles = 12
 

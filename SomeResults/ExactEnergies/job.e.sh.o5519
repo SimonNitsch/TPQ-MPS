@@ -1,0 +1,480 @@
+                                                                
+      ,ammmmmmmmmmmmmmb,,        Welcome to the                 
+    ,@@` dm          mb  ===m                                    
+  ,@@` d@@@@@@@@@@@@@@@@b Pm,    @@          @@        @@       
+ d@  d@@@ @@@ @@@@@@ @@@@b ~@a   @@          @@     @@@@@@@@    
+d@   @@@@ ^^^ @@@@ m m @@@   @,  @@          @@   @@@  @@  @@@  
+@    @@@@_@@@_@@@@mm mm@@@   @|  @@mmmmmmmmmm@@  @@    @@    @@ 
+P@    9@@@@@@@@@@@@@@@@@P    @~  @@@@@@@@@@@@@@  @@    @@    @@ 
+ @@      ~~9@@@@@@PPP~      @P   @@          @@   @@@  @@  @@@  
+  ~@@b      @@@@@@@      ,@@~    @@          @@     @@@@@@@@    
+    ~@@@m,,@@@@@@@@@  ,m@~`      @@          @@        @@       
+        ~~9@@@@@@@@@  ~                                         
+           9@P~~~9@P             Version 3.5.2    
+                                                                
+
+
+#####  Parallelization Info.  #####
+
+  OpenMP threads : 1
+  MPI PEs : 1 
+
+
+######  Input Parameter of Standard Intarface  ######
+
+  Open Standard-Mode Inputfile ../HPhi-3.5.2/samples/tutorial_2.2/stan2b.in 
+
+  KEYWORD : w                    | VALUE : 2 
+  KEYWORD : l                    | VALUE : 2 
+  KEYWORD : model                | VALUE : SpinGC 
+  KEYWORD : method               | VALUE : fulldiag 
+  KEYWORD : lattice              | VALUE : Honeycomb 
+  KEYWORD : j0x                  | VALUE : -1.0 
+  KEYWORD : j0y                  | VALUE : 0.0 
+  KEYWORD : j0z                  | VALUE : 0.0 
+  KEYWORD : j1x                  | VALUE : 0.0 
+  KEYWORD : j1y                  | VALUE : -1.0 
+  KEYWORD : j1z                  | VALUE : 0.0 
+  KEYWORD : j2x                  | VALUE : 0.0 
+  KEYWORD : j2y                  | VALUE : 0.0 
+  KEYWORD : j2z                  | VALUE : -1.0 
+  Skipping a line.
+  KEYWORD : j0yz                 | VALUE : -0.3 
+  KEYWORD : j0zy                 | VALUE : -0.3 
+  KEYWORD : j1xz                 | VALUE : -0.3 
+  KEYWORD : j1zx                 | VALUE : -0.3 
+  KEYWORD : j2xy                 | VALUE : -0.3 
+  KEYWORD : j2yx                 | VALUE : -0.3 
+  KEYWORD : 2s                   | VALUE : 1 
+
+#######  Construct Model  #######
+
+    CDataFileHead = zvo         ######  DEFAULT VALUE IS USED  ######
+  @ Lattice Size & Shape
+
+                a = 1.00000     ######  DEFAULT VALUE IS USED  ######
+          Wlength = 1.00000     ######  DEFAULT VALUE IS USED  ######
+          Llength = 1.00000     ######  DEFAULT VALUE IS USED  ######
+               Wx = 1.00000     ######  DEFAULT VALUE IS USED  ######
+               Wy = 0.00000     ######  DEFAULT VALUE IS USED  ######
+               Lx = 0.50000     ######  DEFAULT VALUE IS USED  ######
+               Ly = 0.86603     ######  DEFAULT VALUE IS USED  ######
+           phase0 = 0.00000     ######  DEFAULT VALUE IS USED  ######
+           phase1 = 0.00000     ######  DEFAULT VALUE IS USED  ######
+
+  @ Super-Lattice setting
+
+                L = 2         
+                W = 2         
+           Height = 1           ######  DEFAULT VALUE IS USED  ######
+   Number of Cell = 4
+
+  @ Hamiltonian 
+
+                h = 0.00000     ######  DEFAULT VALUE IS USED  ######
+            Gamma = 0.00000     ######  DEFAULT VALUE IS USED  ######
+          Gamma_y = 0.00000     ######  DEFAULT VALUE IS USED  ######
+               2S = 1         
+                D = 0.00000     ######  DEFAULT VALUE IS USED  ######
+              J0x = -1.00000  
+              J0y = 0.00000   
+              J0yz = -0.30000  
+              J0zy = -0.30000  
+              J0z = 0.00000   
+              J1x = 0.00000   
+              J1xz = -0.30000  
+              J1y = -1.00000  
+              J1zx = -0.30000  
+              J1z = 0.00000   
+              J2x = 0.00000   
+              J2xy = -0.30000  
+              J2yx = -0.30000  
+              J2y = 0.00000   
+              J2z = -1.00000  
+
+  @ Numerical conditions
+
+       LargeValue = 2.37500     ######  DEFAULT VALUE IS USED  ######
+
+######  Print Expert input files  ######
+
+    locspn.def is written.
+      trans.def is written.
+    coulombinter.def is written.
+    hund.def is written.
+    exchange.def is written.
+    pairlift.def is written.
+    interall.def is written.
+      Lanczos_max = 2000        ######  DEFAULT VALUE IS USED  ######
+       initial_iv = -1          ######  DEFAULT VALUE IS USED  ######
+             exct = 1           ######  DEFAULT VALUE IS USED  ######
+       LanczosEps = 14          ######  DEFAULT VALUE IS USED  ######
+    LanczosTarget = 2           ######  DEFAULT VALUE IS USED  ######
+           NumAve = 5           ######  DEFAULT VALUE IS USED  ######
+    ExpecInterval = 20          ######  DEFAULT VALUE IS USED  ######
+           NOmega = 200         ######  DEFAULT VALUE IS USED  ######
+         OmegaMax = 19.00000    ######  DEFAULT VALUE IS USED  ######
+         OmegaMin = -19.00000   ######  DEFAULT VALUE IS USED  ######
+         OmegaOrg = 0.00000     ######  DEFAULT VALUE IS USED  ######
+          OmegaIm = 0.02000     ######  DEFAULT VALUE IS USED  ######
+     modpara.def is written.
+
+  @ Spectrum
+
+       SpectrumQW = 0.00000     ######  DEFAULT VALUE IS USED  ######
+       SpectrumQL = 0.00000     ######  DEFAULT VALUE IS USED  ######
+       SpectrumQH = 0.00000     ######  DEFAULT VALUE IS USED  ######
+     SpectrumType = szsz        ######  DEFAULT VALUE IS USED  ######
+        pair.def is written.
+
+
+  @ CalcMod
+
+          Restart = none        ######  DEFAULT VALUE IS USED  ######
+   InitialVecType = c           ######  DEFAULT VALUE IS USED  ######
+       EigenVecIO = none        ######  DEFAULT VALUE IS USED  ######
+         HamIO = none        ######  DEFAULT VALUE IS USED  ######
+         CalcSpec = none        ######  DEFAULT VALUE IS USED  ######
+         OutputExcitedVec = none        ######  DEFAULT VALUE IS USED  ######
+     calcmod.def is written.
+
+      ioutputmode = 1           ######  DEFAULT VALUE IS USED  ######
+    greenone.def is written.
+    greentwo.def is written.
+    namelist.def is written.
+
+######  Input files are generated.  ######
+
+  Read File 'namelist.def'.
+  Read File 'calcmod.def' for CalcMod.
+  Read File 'modpara.def' for ModPara.
+  Read File 'locspn.def' for LocSpin.
+  Read File 'trans.def' for Trans.
+  Read File 'coulombinter.def' for CoulombInter.
+  Read File 'hund.def' for Hund.
+  Read File 'exchange.def' for Exchange.
+  Read File 'interall.def' for InterAll.
+  Read File 'greenone.def' for OneBodyG.
+  Read File 'greentwo.def' for TwoBodyG.
+  Read File 'pairlift.def' for PairLift.
+  Read File 'pair.def' for PairExcitation.
+
+######  Definition files are correct.  ######
+
+  Read File 'locspn.def'.
+  Read File 'trans.def'.
+  Read File 'coulombinter.def'.
+  Read File 'hund.def'.
+  Read File 'exchange.def'.
+  Read File 'interall.def'.
+  Read File 'greenone.def'.
+  Read File 'greentwo.def'.
+  Read File 'pairlift.def'.
+  Read File 'pair.def'.
+
+######  Indices and Parameters of Definition files(*.def) are complete.  ######
+
+  MAX DIMENSION idim_max=256 
+  APPROXIMATE REQUIRED MEMORY  max_mem=0.004194 GB 
+
+
+######  MPI site separation summary  ######
+
+  INTRA process site
+    Site    Bit
+       0       2
+       1       2
+       2       2
+       3       2
+       4       2
+       5       2
+       6       2
+       7       2
+
+  INTER process site
+    Site    Bit
+
+  Process element info
+    Process       Dimension   Nup  Ndown  Nelec  Total2Sz   State
+          0             256     0      0      0         0   
+
+   Total dimension : 256
+
+
+######  LARGE ALLOCATE FINISH !  ######
+
+  Start: Calculate HilbertNum for fixed Sz. 
+  End  : Calculate HilbertNum for fixed Sz. 
+
+  Start: Calculate diagaonal components of Hamiltonian. 
+  End  : Calculate diagaonal components of Hamiltonian. 
+
+######  Start: Setting Hamiltonian.  ######
+
+######  End  : Setting Hamiltonian.  ######
+
+######  Start: Diagonalization.  ######
+
+######  End  : Diagonalization.  ######
+
+######  Start: Calc Expected value.  ######
+
+i=    0 Energy= -2.281699 N=  8.000000 Sz= -1.694358 S2= 14.055586 Doublon=  0.000000 
+i=    1 Energy= -2.281699 N=  8.000000 Sz=  1.694358 S2= 14.055586 Doublon=  0.000000 
+i=    2 Energy= -1.996896 N=  8.000000 Sz= -0.000000 S2=  6.909028 Doublon=  0.000000 
+i=    3 Energy= -1.882014 N=  8.000000 Sz=  0.000000 S2= 10.555663 Doublon=  0.000000 
+i=    4 Energy= -1.841956 N=  8.000000 Sz= -0.000000 S2=  7.189599 Doublon=  0.000000 
+i=    5 Energy= -1.841956 N=  8.000000 Sz=  0.000000 S2=  7.189599 Doublon=  0.000000 
+i=    6 Energy= -1.841956 N=  8.000000 Sz= -0.000000 S2=  7.189599 Doublon=  0.000000 
+i=    7 Energy= -1.767463 N=  8.000000 Sz=  0.000000 S2=  7.527980 Doublon=  0.000000 
+i=    8 Energy= -1.767463 N=  8.000000 Sz=  0.000000 S2=  7.527980 Doublon=  0.000000 
+i=    9 Energy= -1.767463 N=  8.000000 Sz= -0.000000 S2=  7.527980 Doublon=  0.000000 
+i=   10 Energy= -1.649413 N=  8.000000 Sz=  0.000000 S2=  7.160643 Doublon=  0.000000 
+i=   11 Energy= -1.649413 N=  8.000000 Sz= -0.000000 S2=  7.160643 Doublon=  0.000000 
+i=   12 Energy= -1.649413 N=  8.000000 Sz= -0.000000 S2=  7.160643 Doublon=  0.000000 
+i=   13 Energy= -1.546280 N=  8.000000 Sz= -0.000000 S2=  6.015317 Doublon=  0.000000 
+i=   14 Energy= -1.546280 N=  8.000000 Sz= -0.000000 S2=  6.015317 Doublon=  0.000000 
+i=   15 Energy= -1.546280 N=  8.000000 Sz= -0.000000 S2=  6.015317 Doublon=  0.000000 
+i=   16 Energy= -1.490303 N=  8.000000 Sz= -0.000000 S2=  8.709501 Doublon=  0.000000 
+i=   17 Energy= -1.490303 N=  8.000000 Sz= -0.000000 S2=  8.709501 Doublon=  0.000000 
+i=   18 Energy= -1.490303 N=  8.000000 Sz=  0.000000 S2=  8.709501 Doublon=  0.000000 
+i=   19 Energy= -1.396639 N=  8.000000 Sz= -0.000000 S2=  5.994220 Doublon=  0.000000 
+i=   20 Energy= -1.396639 N=  8.000000 Sz= -0.000000 S2=  5.994220 Doublon=  0.000000 
+i=   21 Energy= -1.396639 N=  8.000000 Sz= -0.000000 S2=  5.994220 Doublon=  0.000000 
+i=   22 Energy= -1.350408 N=  8.000000 Sz=  0.005680 S2=  7.605679 Doublon=  0.000000 
+i=   23 Energy= -1.350408 N=  8.000000 Sz= -0.005680 S2=  7.605679 Doublon=  0.000000 
+i=   24 Energy= -1.329638 N=  8.000000 Sz= -0.000000 S2= 12.727697 Doublon=  0.000000 
+i=   25 Energy= -1.308496 N=  8.000000 Sz=  0.000000 S2= 12.027348 Doublon=  0.000000 
+i=   26 Energy= -1.271878 N=  8.000000 Sz= -0.000000 S2=  5.894282 Doublon=  0.000000 
+i=   27 Energy= -1.253300 N=  8.000000 Sz= -0.345965 S2= 14.864134 Doublon=  0.000000 
+i=   28 Energy= -1.253300 N=  8.000000 Sz=  0.345965 S2= 14.864134 Doublon=  0.000000 
+i=   29 Energy= -1.173435 N=  8.000000 Sz= -0.000000 S2=  7.745878 Doublon=  0.000000 
+i=   30 Energy= -1.173435 N=  8.000000 Sz=  0.000000 S2=  7.745878 Doublon=  0.000000 
+i=   31 Energy= -1.173435 N=  8.000000 Sz=  0.000000 S2=  7.745878 Doublon=  0.000000 
+i=   32 Energy= -1.128744 N=  8.000000 Sz=  0.000000 S2=  5.876542 Doublon=  0.000000 
+i=   33 Energy= -1.128744 N=  8.000000 Sz= -0.000000 S2=  5.876542 Doublon=  0.000000 
+i=   34 Energy= -1.128744 N=  8.000000 Sz=  0.000000 S2=  5.876542 Doublon=  0.000000 
+i=   35 Energy= -1.100517 N=  8.000000 Sz=  0.000000 S2=  4.361106 Doublon=  0.000000 
+i=   36 Energy= -1.056195 N=  8.000000 Sz=  0.000000 S2=  9.067902 Doublon=  0.000000 
+i=   37 Energy= -1.056195 N=  8.000000 Sz=  0.000000 S2=  9.067902 Doublon=  0.000000 
+i=   38 Energy= -1.056195 N=  8.000000 Sz= -0.000000 S2=  9.067902 Doublon=  0.000000 
+i=   39 Energy= -1.048977 N=  8.000000 Sz= -0.035106 S2= 10.305612 Doublon=  0.000000 
+i=   40 Energy= -1.048977 N=  8.000000 Sz=  0.035106 S2= 10.305612 Doublon=  0.000000 
+i=   41 Energy= -1.022154 N=  8.000000 Sz= -0.000000 S2=  6.907252 Doublon=  0.000000 
+i=   42 Energy= -1.008154 N=  8.000000 Sz= -0.000000 S2=  7.542031 Doublon=  0.000000 
+i=   43 Energy= -1.008154 N=  8.000000 Sz= -0.000000 S2=  7.542031 Doublon=  0.000000 
+i=   44 Energy= -1.008154 N=  8.000000 Sz=  0.000000 S2=  7.542031 Doublon=  0.000000 
+i=   45 Energy= -0.884509 N=  8.000000 Sz= -0.364723 S2=  4.454383 Doublon=  0.000000 
+i=   46 Energy= -0.884509 N=  8.000000 Sz=  0.364723 S2=  4.454383 Doublon=  0.000000 
+i=   47 Energy= -0.824513 N=  8.000000 Sz= -0.000000 S2=  9.188602 Doublon=  0.000000 
+i=   48 Energy= -0.824513 N=  8.000000 Sz=  0.000000 S2=  9.188602 Doublon=  0.000000 
+i=   49 Energy= -0.824513 N=  8.000000 Sz= -0.000000 S2=  9.188602 Doublon=  0.000000 
+i=   50 Energy= -0.812230 N=  8.000000 Sz= -0.000000 S2=  7.366050 Doublon=  0.000000 
+i=   51 Energy= -0.812230 N=  8.000000 Sz=  0.000000 S2=  7.366050 Doublon=  0.000000 
+i=   52 Energy= -0.812230 N=  8.000000 Sz= -0.000000 S2=  7.366050 Doublon=  0.000000 
+i=   53 Energy= -0.788295 N=  8.000000 Sz= -0.000000 S2=  8.131002 Doublon=  0.000000 
+i=   54 Energy= -0.788295 N=  8.000000 Sz= -0.000000 S2=  8.131002 Doublon=  0.000000 
+i=   55 Energy= -0.788295 N=  8.000000 Sz=  0.000000 S2=  8.131002 Doublon=  0.000000 
+i=   56 Energy= -0.768030 N=  8.000000 Sz= -0.000000 S2=  9.584864 Doublon=  0.000000 
+i=   57 Energy= -0.767400 N=  8.000000 Sz= -0.085190 S2=  4.863520 Doublon=  0.000000 
+i=   58 Energy= -0.767400 N=  8.000000 Sz=  0.085190 S2=  4.863520 Doublon=  0.000000 
+i=   59 Energy= -0.746740 N=  8.000000 Sz=  0.000000 S2=  7.893308 Doublon=  0.000000 
+i=   60 Energy= -0.746740 N=  8.000000 Sz=  0.000000 S2=  7.893308 Doublon=  0.000000 
+i=   61 Energy= -0.746740 N=  8.000000 Sz= -0.000000 S2=  7.893308 Doublon=  0.000000 
+i=   62 Energy= -0.725824 N=  8.000000 Sz= -0.000000 S2= 15.579853 Doublon=  0.000000 
+i=   63 Energy= -0.654245 N=  8.000000 Sz=  0.000000 S2=  5.165430 Doublon=  0.000000 
+i=   64 Energy= -0.654245 N=  8.000000 Sz=  0.000000 S2=  5.165430 Doublon=  0.000000 
+i=   65 Energy= -0.654245 N=  8.000000 Sz= -0.000000 S2=  5.165430 Doublon=  0.000000 
+i=   66 Energy= -0.638607 N=  8.000000 Sz=  0.000000 S2= 10.218469 Doublon=  0.000000 
+i=   67 Energy= -0.638607 N=  8.000000 Sz=  0.000000 S2= 10.218469 Doublon=  0.000000 
+i=   68 Energy= -0.638607 N=  8.000000 Sz= -0.000000 S2= 10.218469 Doublon=  0.000000 
+i=   69 Energy= -0.638100 N=  8.000000 Sz= -0.000000 S2=  3.977443 Doublon=  0.000000 
+i=   70 Energy= -0.638100 N=  8.000000 Sz= -0.000000 S2=  3.977443 Doublon=  0.000000 
+i=   71 Energy= -0.638100 N=  8.000000 Sz=  0.000000 S2=  3.977443 Doublon=  0.000000 
+i=   72 Energy= -0.569631 N=  8.000000 Sz=  0.000000 S2=  5.103046 Doublon=  0.000000 
+i=   73 Energy= -0.569631 N=  8.000000 Sz=  0.000000 S2=  5.103046 Doublon=  0.000000 
+i=   74 Energy= -0.569631 N=  8.000000 Sz= -0.000000 S2=  5.103046 Doublon=  0.000000 
+i=   75 Energy= -0.563875 N=  8.000000 Sz=  0.085053 S2= 14.985181 Doublon=  0.000000 
+i=   76 Energy= -0.563875 N=  8.000000 Sz= -0.085053 S2= 14.985181 Doublon=  0.000000 
+i=   77 Energy= -0.512232 N=  8.000000 Sz= -0.090377 S2=  4.536502 Doublon=  0.000000 
+i=   78 Energy= -0.512232 N=  8.000000 Sz=  0.090377 S2=  4.536502 Doublon=  0.000000 
+i=   79 Energy= -0.511162 N=  8.000000 Sz=  0.000000 S2=  7.437420 Doublon=  0.000000 
+i=   80 Energy= -0.511162 N=  8.000000 Sz= -0.000000 S2=  7.437420 Doublon=  0.000000 
+i=   81 Energy= -0.511162 N=  8.000000 Sz=  0.000000 S2=  7.437420 Doublon=  0.000000 
+i=   82 Energy= -0.493416 N=  8.000000 Sz= -0.000000 S2=  5.300609 Doublon=  0.000000 
+i=   83 Energy= -0.471847 N=  8.000000 Sz=  0.000000 S2=  4.127038 Doublon=  0.000000 
+i=   84 Energy= -0.471847 N=  8.000000 Sz= -0.000000 S2=  4.127038 Doublon=  0.000000 
+i=   85 Energy= -0.471847 N=  8.000000 Sz= -0.000000 S2=  4.127038 Doublon=  0.000000 
+i=   86 Energy= -0.433693 N=  8.000000 Sz= -0.388058 S2=  6.457178 Doublon=  0.000000 
+i=   87 Energy= -0.433693 N=  8.000000 Sz=  0.388058 S2=  6.457178 Doublon=  0.000000 
+i=   88 Energy= -0.400692 N=  8.000000 Sz=  0.000000 S2=  6.256753 Doublon=  0.000000 
+i=   89 Energy= -0.400692 N=  8.000000 Sz= -0.000000 S2=  6.256753 Doublon=  0.000000 
+i=   90 Energy= -0.400692 N=  8.000000 Sz= -0.000000 S2=  6.256753 Doublon=  0.000000 
+i=   91 Energy= -0.345090 N=  8.000000 Sz= -0.000000 S2=  7.018086 Doublon=  0.000000 
+i=   92 Energy= -0.345090 N=  8.000000 Sz= -0.000000 S2=  7.018086 Doublon=  0.000000 
+i=   93 Energy= -0.345090 N=  8.000000 Sz=  0.000000 S2=  7.018086 Doublon=  0.000000 
+i=   94 Energy= -0.336354 N=  8.000000 Sz= -0.000000 S2=  4.066330 Doublon=  0.000000 
+i=   95 Energy= -0.336354 N=  8.000000 Sz=  0.000000 S2=  4.066330 Doublon=  0.000000 
+i=   96 Energy= -0.336354 N=  8.000000 Sz=  0.000000 S2=  4.066330 Doublon=  0.000000 
+i=   97 Energy= -0.320499 N=  8.000000 Sz= -0.152609 S2=  5.232428 Doublon=  0.000000 
+i=   98 Energy= -0.320499 N=  8.000000 Sz=  0.152609 S2=  5.232428 Doublon=  0.000000 
+i=   99 Energy= -0.260428 N=  8.000000 Sz=  0.000000 S2=  9.147281 Doublon=  0.000000 
+i=  100 Energy= -0.238604 N=  8.000000 Sz=  0.050920 S2=  9.405638 Doublon=  0.000000 
+i=  101 Energy= -0.238604 N=  8.000000 Sz= -0.050920 S2=  9.405638 Doublon=  0.000000 
+i=  102 Energy= -0.211431 N=  8.000000 Sz= -0.000000 S2=  7.574723 Doublon=  0.000000 
+i=  103 Energy= -0.211431 N=  8.000000 Sz= -0.000000 S2=  7.574723 Doublon=  0.000000 
+i=  104 Energy= -0.211431 N=  8.000000 Sz= -0.000000 S2=  7.574723 Doublon=  0.000000 
+i=  105 Energy= -0.201508 N=  8.000000 Sz=  0.000000 S2=  6.719745 Doublon=  0.000000 
+i=  106 Energy= -0.201508 N=  8.000000 Sz=  0.000000 S2=  6.719745 Doublon=  0.000000 
+i=  107 Energy= -0.201508 N=  8.000000 Sz=  0.000000 S2=  6.719745 Doublon=  0.000000 
+i=  108 Energy= -0.121519 N=  8.000000 Sz= -0.000000 S2=  5.675296 Doublon=  0.000000 
+i=  109 Energy= -0.121519 N=  8.000000 Sz=  0.000000 S2=  5.675296 Doublon=  0.000000 
+i=  110 Energy= -0.121519 N=  8.000000 Sz= -0.000000 S2=  5.675296 Doublon=  0.000000 
+i=  111 Energy= -0.083717 N=  8.000000 Sz=  0.000000 S2=  7.687818 Doublon=  0.000000 
+i=  112 Energy= -0.050047 N=  8.000000 Sz=  0.000000 S2=  6.480820 Doublon=  0.000000 
+i=  113 Energy= -0.044254 N=  8.000000 Sz=  0.000000 S2=  4.687477 Doublon=  0.000000 
+i=  114 Energy= -0.044254 N=  8.000000 Sz=  0.000000 S2=  4.687477 Doublon=  0.000000 
+i=  115 Energy= -0.044254 N=  8.000000 Sz= -0.000000 S2=  4.687477 Doublon=  0.000000 
+i=  116 Energy= -0.032534 N=  8.000000 Sz=  0.000000 S2=  5.926360 Doublon=  0.000000 
+i=  117 Energy= -0.032534 N=  8.000000 Sz= -0.000000 S2=  5.926360 Doublon=  0.000000 
+i=  118 Energy= -0.032534 N=  8.000000 Sz= -0.000000 S2=  5.926360 Doublon=  0.000000 
+i=  119 Energy= -0.013022 N=  8.000000 Sz= -0.000000 S2=  6.679606 Doublon=  0.000000 
+i=  120 Energy= -0.013022 N=  8.000000 Sz= -0.000000 S2=  6.679606 Doublon=  0.000000 
+i=  121 Energy= -0.013022 N=  8.000000 Sz=  0.000000 S2=  6.679606 Doublon=  0.000000 
+i=  122 Energy= -0.007380 N=  8.000000 Sz=  0.000000 S2=  6.818207 Doublon=  0.000000 
+i=  123 Energy= -0.007380 N=  8.000000 Sz=  0.000000 S2=  6.818207 Doublon=  0.000000 
+i=  124 Energy= -0.007380 N=  8.000000 Sz=  0.000000 S2=  6.818207 Doublon=  0.000000 
+i=  125 Energy=  0.000000 N=  8.000000 Sz= -0.046493 S2=  6.587274 Doublon=  0.000000 
+i=  126 Energy=  0.000000 N=  8.000000 Sz= -0.002097 S2=  3.954481 Doublon=  0.000000 
+i=  127 Energy= -0.000000 N=  8.000000 Sz=  0.048515 S2=  2.892660 Doublon=  0.000000 
+i=  128 Energy=  0.000000 N=  8.000000 Sz=  0.000075 S2=  6.198650 Doublon=  0.000000 
+i=  129 Energy=  0.030826 N=  8.000000 Sz= -0.000000 S2=  7.085974 Doublon=  0.000000 
+i=  130 Energy=  0.030826 N=  8.000000 Sz=  0.000000 S2=  7.085974 Doublon=  0.000000 
+i=  131 Energy=  0.030826 N=  8.000000 Sz= -0.000000 S2=  7.085974 Doublon=  0.000000 
+i=  132 Energy=  0.041980 N=  8.000000 Sz=  0.000000 S2=  9.581893 Doublon=  0.000000 
+i=  133 Energy=  0.044247 N=  8.000000 Sz= -0.000000 S2=  6.468797 Doublon=  0.000000 
+i=  134 Energy=  0.044247 N=  8.000000 Sz= -0.000000 S2=  6.468797 Doublon=  0.000000 
+i=  135 Energy=  0.044247 N=  8.000000 Sz=  0.000000 S2=  6.468797 Doublon=  0.000000 
+i=  136 Energy=  0.082965 N=  8.000000 Sz= -0.000000 S2=  7.184705 Doublon=  0.000000 
+i=  137 Energy=  0.090852 N=  8.000000 Sz=  0.000000 S2=  5.503467 Doublon=  0.000000 
+i=  138 Energy=  0.090852 N=  8.000000 Sz=  0.000000 S2=  5.503467 Doublon=  0.000000 
+i=  139 Energy=  0.090852 N=  8.000000 Sz=  0.000000 S2=  5.503467 Doublon=  0.000000 
+i=  140 Energy=  0.125702 N=  8.000000 Sz= -0.021190 S2=  9.357757 Doublon=  0.000000 
+i=  141 Energy=  0.125702 N=  8.000000 Sz=  0.021190 S2=  9.357757 Doublon=  0.000000 
+i=  142 Energy=  0.195536 N=  8.000000 Sz=  0.000000 S2=  8.977767 Doublon=  0.000000 
+i=  143 Energy=  0.195536 N=  8.000000 Sz= -0.000000 S2=  8.977767 Doublon=  0.000000 
+i=  144 Energy=  0.195536 N=  8.000000 Sz=  0.000000 S2=  8.977767 Doublon=  0.000000 
+i=  145 Energy=  0.212153 N=  8.000000 Sz=  0.000000 S2= 10.256392 Doublon=  0.000000 
+i=  146 Energy=  0.249118 N=  8.000000 Sz= -0.124411 S2=  6.699892 Doublon=  0.000000 
+i=  147 Energy=  0.249118 N=  8.000000 Sz=  0.124411 S2=  6.699892 Doublon=  0.000000 
+i=  148 Energy=  0.252274 N=  8.000000 Sz=  0.000000 S2=  3.435903 Doublon=  0.000000 
+i=  149 Energy=  0.252274 N=  8.000000 Sz= -0.000000 S2=  3.435903 Doublon=  0.000000 
+i=  150 Energy=  0.252274 N=  8.000000 Sz= -0.000000 S2=  3.435903 Doublon=  0.000000 
+i=  151 Energy=  0.262293 N=  8.000000 Sz= -0.000000 S2=  3.941575 Doublon=  0.000000 
+i=  152 Energy=  0.262293 N=  8.000000 Sz= -0.000000 S2=  3.941575 Doublon=  0.000000 
+i=  153 Energy=  0.262293 N=  8.000000 Sz= -0.000000 S2=  3.941575 Doublon=  0.000000 
+i=  154 Energy=  0.309540 N=  8.000000 Sz= -0.000000 S2=  6.424450 Doublon=  0.000000 
+i=  155 Energy=  0.309540 N=  8.000000 Sz=  0.000000 S2=  6.424450 Doublon=  0.000000 
+i=  156 Energy=  0.309540 N=  8.000000 Sz= -0.000000 S2=  6.424450 Doublon=  0.000000 
+i=  157 Energy=  0.310054 N=  8.000000 Sz=  0.171043 S2=  5.767025 Doublon=  0.000000 
+i=  158 Energy=  0.310054 N=  8.000000 Sz= -0.171043 S2=  5.767025 Doublon=  0.000000 
+i=  159 Energy=  0.334639 N=  8.000000 Sz=  0.000000 S2=  4.824090 Doublon=  0.000000 
+i=  160 Energy=  0.334639 N=  8.000000 Sz=  0.000000 S2=  4.824090 Doublon=  0.000000 
+i=  161 Energy=  0.334639 N=  8.000000 Sz=  0.000000 S2=  4.824090 Doublon=  0.000000 
+i=  162 Energy=  0.364267 N=  8.000000 Sz= -0.000000 S2=  3.603167 Doublon=  0.000000 
+i=  163 Energy=  0.364267 N=  8.000000 Sz=  0.000000 S2=  3.603167 Doublon=  0.000000 
+i=  164 Energy=  0.364267 N=  8.000000 Sz= -0.000000 S2=  3.603167 Doublon=  0.000000 
+i=  165 Energy=  0.375750 N=  8.000000 Sz= -0.041323 S2=  7.853153 Doublon=  0.000000 
+i=  166 Energy=  0.375750 N=  8.000000 Sz=  0.041323 S2=  7.853153 Doublon=  0.000000 
+i=  167 Energy=  0.384595 N=  8.000000 Sz=  0.000000 S2=  3.288204 Doublon=  0.000000 
+i=  168 Energy=  0.384595 N=  8.000000 Sz= -0.000000 S2=  3.288204 Doublon=  0.000000 
+i=  169 Energy=  0.384595 N=  8.000000 Sz=  0.000000 S2=  3.288204 Doublon=  0.000000 
+i=  170 Energy=  0.445203 N=  8.000000 Sz=  0.000000 S2=  2.810269 Doublon=  0.000000 
+i=  171 Energy=  0.445203 N=  8.000000 Sz= -0.000000 S2=  2.810269 Doublon=  0.000000 
+i=  172 Energy=  0.445203 N=  8.000000 Sz=  0.000000 S2=  2.810269 Doublon=  0.000000 
+i=  173 Energy=  0.497883 N=  8.000000 Sz= -0.000000 S2=  6.919359 Doublon=  0.000000 
+i=  174 Energy=  0.497883 N=  8.000000 Sz=  0.000000 S2=  6.919359 Doublon=  0.000000 
+i=  175 Energy=  0.497883 N=  8.000000 Sz=  0.000000 S2=  6.919359 Doublon=  0.000000 
+i=  176 Energy=  0.535435 N=  8.000000 Sz=  0.000000 S2=  4.755443 Doublon=  0.000000 
+i=  177 Energy=  0.543250 N=  8.000000 Sz=  0.386722 S2=  5.960639 Doublon=  0.000000 
+i=  178 Energy=  0.543250 N=  8.000000 Sz= -0.386722 S2=  5.960639 Doublon=  0.000000 
+i=  179 Energy=  0.575834 N=  8.000000 Sz= -0.000000 S2=  4.139021 Doublon=  0.000000 
+i=  180 Energy=  0.575834 N=  8.000000 Sz= -0.000000 S2=  4.139021 Doublon=  0.000000 
+i=  181 Energy=  0.575834 N=  8.000000 Sz= -0.000000 S2=  4.139021 Doublon=  0.000000 
+i=  182 Energy=  0.600358 N=  8.000000 Sz= -0.000000 S2=  3.845867 Doublon=  0.000000 
+i=  183 Energy=  0.600358 N=  8.000000 Sz=  0.000000 S2=  3.845867 Doublon=  0.000000 
+i=  184 Energy=  0.600358 N=  8.000000 Sz= -0.000000 S2=  3.845867 Doublon=  0.000000 
+i=  185 Energy=  0.637282 N=  8.000000 Sz=  0.000000 S2=  4.754435 Doublon=  0.000000 
+i=  186 Energy=  0.637282 N=  8.000000 Sz= -0.000000 S2=  4.754435 Doublon=  0.000000 
+i=  187 Energy=  0.637282 N=  8.000000 Sz= -0.000000 S2=  4.754435 Doublon=  0.000000 
+i=  188 Energy=  0.729470 N=  8.000000 Sz=  0.000000 S2=  4.950647 Doublon=  0.000000 
+i=  189 Energy=  0.729470 N=  8.000000 Sz= -0.000000 S2=  4.950647 Doublon=  0.000000 
+i=  190 Energy=  0.729470 N=  8.000000 Sz=  0.000000 S2=  4.950647 Doublon=  0.000000 
+i=  191 Energy=  0.738801 N=  8.000000 Sz=  0.016128 S2=  4.208718 Doublon=  0.000000 
+i=  192 Energy=  0.738801 N=  8.000000 Sz= -0.016128 S2=  4.208718 Doublon=  0.000000 
+i=  193 Energy=  0.739382 N=  8.000000 Sz=  0.000000 S2=  2.611268 Doublon=  0.000000 
+i=  194 Energy=  0.739382 N=  8.000000 Sz= -0.000000 S2=  2.611268 Doublon=  0.000000 
+i=  195 Energy=  0.739382 N=  8.000000 Sz= -0.000000 S2=  2.611268 Doublon=  0.000000 
+i=  196 Energy=  0.741262 N=  8.000000 Sz= -0.000000 S2=  6.544466 Doublon=  0.000000 
+i=  197 Energy=  0.782306 N=  8.000000 Sz=  0.000000 S2=  4.958437 Doublon=  0.000000 
+i=  198 Energy=  0.785463 N=  8.000000 Sz= -0.000000 S2=  4.049713 Doublon=  0.000000 
+i=  199 Energy=  0.785463 N=  8.000000 Sz=  0.000000 S2=  4.049713 Doublon=  0.000000 
+i=  200 Energy=  0.785463 N=  8.000000 Sz= -0.000000 S2=  4.049713 Doublon=  0.000000 
+i=  201 Energy=  0.807882 N=  8.000000 Sz=  0.000000 S2=  5.516217 Doublon=  0.000000 
+i=  202 Energy=  0.807882 N=  8.000000 Sz= -0.000000 S2=  5.516217 Doublon=  0.000000 
+i=  203 Energy=  0.807882 N=  8.000000 Sz=  0.000000 S2=  5.516217 Doublon=  0.000000 
+i=  204 Energy=  0.838026 N=  8.000000 Sz= -0.037190 S2=  6.690902 Doublon=  0.000000 
+i=  205 Energy=  0.838026 N=  8.000000 Sz=  0.037190 S2=  6.690902 Doublon=  0.000000 
+i=  206 Energy=  0.870123 N=  8.000000 Sz=  0.000000 S2=  5.374244 Doublon=  0.000000 
+i=  207 Energy=  0.924539 N=  8.000000 Sz= -0.000000 S2=  4.684070 Doublon=  0.000000 
+i=  208 Energy=  0.924539 N=  8.000000 Sz=  0.000000 S2=  4.684070 Doublon=  0.000000 
+i=  209 Energy=  0.924539 N=  8.000000 Sz= -0.000000 S2=  4.684070 Doublon=  0.000000 
+i=  210 Energy=  0.928259 N=  8.000000 Sz= -0.000000 S2=  4.766778 Doublon=  0.000000 
+i=  211 Energy=  0.946555 N=  8.000000 Sz= -0.000000 S2=  4.574301 Doublon=  0.000000 
+i=  212 Energy=  0.946555 N=  8.000000 Sz= -0.000000 S2=  4.574301 Doublon=  0.000000 
+i=  213 Energy=  0.946555 N=  8.000000 Sz=  0.000000 S2=  4.574301 Doublon=  0.000000 
+i=  214 Energy=  0.960864 N=  8.000000 Sz=  0.384591 S2=  5.848285 Doublon=  0.000000 
+i=  215 Energy=  0.960864 N=  8.000000 Sz= -0.384591 S2=  5.848285 Doublon=  0.000000 
+i=  216 Energy=  1.017565 N=  8.000000 Sz= -0.000000 S2=  3.610649 Doublon=  0.000000 
+i=  217 Energy=  1.017565 N=  8.000000 Sz=  0.000000 S2=  3.610649 Doublon=  0.000000 
+i=  218 Energy=  1.017565 N=  8.000000 Sz=  0.000000 S2=  3.610649 Doublon=  0.000000 
+i=  219 Energy=  1.112631 N=  8.000000 Sz=  0.045008 S2=  4.837111 Doublon=  0.000000 
+i=  220 Energy=  1.112631 N=  8.000000 Sz= -0.045008 S2=  4.837111 Doublon=  0.000000 
+i=  221 Energy=  1.178973 N=  8.000000 Sz= -0.000000 S2=  4.003267 Doublon=  0.000000 
+i=  222 Energy=  1.178973 N=  8.000000 Sz= -0.000000 S2=  4.003267 Doublon=  0.000000 
+i=  223 Energy=  1.178973 N=  8.000000 Sz=  0.000000 S2=  4.003267 Doublon=  0.000000 
+i=  224 Energy=  1.242498 N=  8.000000 Sz= -0.427618 S2=  2.474401 Doublon=  0.000000 
+i=  225 Energy=  1.242498 N=  8.000000 Sz=  0.427618 S2=  2.474401 Doublon=  0.000000 
+i=  226 Energy=  1.257575 N=  8.000000 Sz= -0.000000 S2=  3.115400 Doublon=  0.000000 
+i=  227 Energy=  1.257575 N=  8.000000 Sz= -0.000000 S2=  3.115400 Doublon=  0.000000 
+i=  228 Energy=  1.257575 N=  8.000000 Sz= -0.000000 S2=  3.115400 Doublon=  0.000000 
+i=  229 Energy=  1.291365 N=  8.000000 Sz= -0.000000 S2=  3.649181 Doublon=  0.000000 
+i=  230 Energy=  1.384454 N=  8.000000 Sz=  0.000000 S2=  2.868053 Doublon=  0.000000 
+i=  231 Energy=  1.384454 N=  8.000000 Sz= -0.000000 S2=  2.868053 Doublon=  0.000000 
+i=  232 Energy=  1.384454 N=  8.000000 Sz=  0.000000 S2=  2.868053 Doublon=  0.000000 
+i=  233 Energy=  1.431176 N=  8.000000 Sz= -0.000000 S2=  4.315529 Doublon=  0.000000 
+i=  234 Energy=  1.431176 N=  8.000000 Sz=  0.000000 S2=  4.315529 Doublon=  0.000000 
+i=  235 Energy=  1.431176 N=  8.000000 Sz= -0.000000 S2=  4.315529 Doublon=  0.000000 
+i=  236 Energy=  1.456454 N=  8.000000 Sz=  0.000000 S2=  3.271882 Doublon=  0.000000 
+i=  237 Energy=  1.456454 N=  8.000000 Sz= -0.000000 S2=  3.271882 Doublon=  0.000000 
+i=  238 Energy=  1.456454 N=  8.000000 Sz=  0.000000 S2=  3.271882 Doublon=  0.000000 
+i=  239 Energy=  1.497683 N=  8.000000 Sz= -0.087887 S2=  3.841374 Doublon=  0.000000 
+i=  240 Energy=  1.497683 N=  8.000000 Sz=  0.087887 S2=  3.841374 Doublon=  0.000000 
+i=  241 Energy=  1.513484 N=  8.000000 Sz=  0.000000 S2=  3.761985 Doublon=  0.000000 
+i=  242 Energy=  1.513484 N=  8.000000 Sz=  0.000000 S2=  3.761985 Doublon=  0.000000 
+i=  243 Energy=  1.513484 N=  8.000000 Sz=  0.000000 S2=  3.761985 Doublon=  0.000000 
+i=  244 Energy=  1.516816 N=  8.000000 Sz=  0.000000 S2=  3.491669 Doublon=  0.000000 
+i=  245 Energy=  1.611970 N=  8.000000 Sz=  0.000000 S2=  2.829111 Doublon=  0.000000 
+i=  246 Energy=  1.611970 N=  8.000000 Sz=  0.000000 S2=  2.829111 Doublon=  0.000000 
+i=  247 Energy=  1.611970 N=  8.000000 Sz= -0.000000 S2=  2.829111 Doublon=  0.000000 
+i=  248 Energy=  1.617164 N=  8.000000 Sz= -0.000000 S2=  2.955562 Doublon=  0.000000 
+i=  249 Energy=  1.617164 N=  8.000000 Sz=  0.000000 S2=  2.955562 Doublon=  0.000000 
+i=  250 Energy=  1.617164 N=  8.000000 Sz= -0.000000 S2=  2.955562 Doublon=  0.000000 
+i=  251 Energy=  1.660818 N=  8.000000 Sz= -0.022134 S2=  2.878368 Doublon=  0.000000 
+i=  252 Energy=  1.660818 N=  8.000000 Sz=  0.022134 S2=  2.878368 Doublon=  0.000000 
+i=  253 Energy=  1.686929 N=  8.000000 Sz= -0.000000 S2=  4.487096 Doublon=  0.000000 
+i=  254 Energy=  1.769501 N=  8.000000 Sz=  0.000000 S2=  2.450905 Doublon=  0.000000 
+i=  255 Energy=  1.833962 N=  8.000000 Sz=  0.000000 S2=  1.335171 Doublon=  0.000000 
+######  End  : Calc Expected value.  ######
+
+######  Finish Calculation.  ######
