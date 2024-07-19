@@ -2,6 +2,8 @@
 #pragma once
 
 
+static std::mutex forloop_mutex;
+static std::mutex suscept_mutex;
 
 namespace TDVP_MPS{
 
@@ -498,6 +500,156 @@ void Kitaev_Model::chi_int(itensor::MPS& psi, double n, double t, std::array<std
     double E = itensor::tdvp(sp,H0,dt,sweeps,args);
     std::cout << 0 << " " << std::flush;
     
+}
+
+
+
+void Kitaev_Model::time_evolution(std::vector<std::vector<double>>& Energies, std::vector<std::vector<double>>& Capacity, 
+std::vector<std::vector<double>>& Entropy, std::vector<std::vector<double>>& Flux,
+std::array<std::vector<std::vector<double>>,3>& Magnetization, std::array<std::vector<std::vector<double>>,3>& Magnetization2,
+std::array<std::vector<std::vector<double>>,3>& Susceptibility,
+std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff, int init_rand_sites, int& max_bond, itensor::Args& args, itensor::Sweeps& sweeps){
+
+    std::vector<double> E_vec;
+    std::vector<double> C_vec;
+    std::vector<double> S_vec;
+    std::vector<double> W_vec;
+
+    E_vec.reserve(entries);
+    C_vec.reserve(entries);
+    S_vec.reserve(entries);
+    W_vec.reserve(entries);
+
+    std::array<std::vector<double>,3> Mag_vec;
+    for (auto& i : Mag_vec){
+        i.reserve(entries);
+    }
+    std::array<std::vector<double>,3> Mag_vec2;
+    for (auto& i : Mag_vec2){
+        i.reserve(entries);
+    }
+
+
+    double curr_beta = 0;
+    auto t1 = std::chrono::system_clock::now();
+    auto psi = itensor::randomMPS(sites,init_rand_sites);
+    MPS psix = psi;
+    MPS psiy = psi;
+    MPS psiz = psi;
+
+    std::complex<double> E = itensor::innerC(psi,H0,psi) / itensor::inner(psi,psi);
+    E_vec.push_back(std::real(E));
+    W_vec.push_back(0);
+    C_vec.push_back(0);
+    S_vec.push_back(0);
+    for (auto& i : Mag_vec){
+        i.push_back(0);
+    }
+    for (auto& i : Mag_vec2){
+        i.push_back(0);
+    }
+        //double n = 1;
+
+    for (int j = 0; j != timesteps.size(); j++){
+        int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Mag_vec,Mag_vec2,H0,psi,T[j],timesteps[j],args,sweeps,curr_beta);
+        max_bond = std::max(max_bond,curbond);
+    }
+    S_vec = S_vec.back() - S_vec;
+
+    {
+        std::lock_guard<std::mutex> lock(forloop_mutex);
+        Energies.push_back(E_vec);
+        E_vec.clear();
+        Capacity.push_back(C_vec);
+        C_vec.clear();
+        Entropy.push_back(S_vec);
+        S_vec.clear();
+        Flux.push_back(W_vec);
+        W_vec.clear();
+
+        for (int j = 0; j != 3; j++){
+            Magnetization[j].push_back(Mag_vec[j]);
+            Magnetization2[j].push_back(Mag_vec2[j]);
+        }
+    }
+
+        
+    if (SusceptIntegral){
+        std::array<std::vector<double>,3> Mag_vec_nextx;
+        for (auto& i : Mag_vec_nextx){
+            i.reserve(entries);
+        }
+        std::array<std::vector<double>,3> Mag_vec_nexty;
+        for (auto& i : Mag_vec_nexty){
+            i.reserve(entries);
+        }
+        std::array<std::vector<double>,3> Mag_vec_nextz;
+        for (auto& i : Mag_vec_nextz){
+            i.reserve(entries);
+        }
+        std::array<std::vector<double>,3> Mag_vec_next2;
+        for (auto& i : Mag_vec_next2){
+            i.reserve(entries);
+        }
+
+        for (auto& i : Mag_vec_nextx){
+            i.push_back(0);
+        }
+        for (auto& i : Mag_vec_nextz){
+            i.push_back(0);
+        }
+        for (auto& i : Mag_vec_nexty){
+            i.push_back(0);
+        }
+        for (auto& i : Mag_vec_next2){
+            i.push_back(0);
+        }
+
+        for (int j = 0; j != timesteps.size(); j++){
+            if (Calsusx){
+                tdvp_loop(Mag_vec_nextx,Mag_vec_next2,H0x,psix,T[j],timesteps[j],args,sweeps);
+            }
+            if (Calsusy){
+                tdvp_loop(Mag_vec_nexty,Mag_vec_next2,H0y,psiz,T[j],timesteps[j],args,sweeps);
+            }
+            if (Calsusz){
+                tdvp_loop(Mag_vec_nextz,Mag_vec_next2,H0z,psiy,T[j],timesteps[j],args,sweeps);
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock2(suscept_mutex);
+            if (Calsusx){
+                std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
+                Susceptibility[0].push_back(chix/SusceptDiff);
+            }
+            if (Calsusy){
+                std::vector<double> chiy = Mag_vec_nexty[1] - Mag_vec[1];
+                Susceptibility[1].push_back(chiy/SusceptDiff);
+            }
+            if (Calsusz){
+                std::vector<double> chiz = Mag_vec_nextz[2] - Mag_vec[2];
+                Susceptibility[2].push_back(chiz/SusceptDiff);
+            }
+        }
+    }
+
+    for (int j = 0; j != 3; j++){
+        Mag_vec[j].clear();
+        Mag_vec2[j].clear();
+    }
+
+        
+
+    auto t2 = std::chrono::system_clock::now();
+    auto time = std::chrono::duration<double>(t2-t1);
+    std::cout << "Finished Evolution ID " << std::this_thread::get_id() << ", Time Needed: " << time.count() << " Seconds\n" << std::flush;
+
+
+
+}
+
+
 
 
 /*
@@ -516,7 +668,7 @@ void Kitaev_Model::chi_int(itensor::MPS& psi, double n, double t, std::array<std
     }
     */
 
-}
+
 
 
 
@@ -575,48 +727,23 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
     Energies.reserve(Evols);
     std::vector<std::vector<double>> Flux;
 
-    std::vector<double> E_vec;
-    E_vec.reserve(entries);
-
     std::vector<std::vector<double>> Capacity;
-    std::vector<double> C_vec;
     std::vector<std::vector<double>> Entropy;
-    std::vector<double> S_vec;
     Capacity.reserve(Evols);
     Entropy.reserve(Evols);
-    C_vec.reserve(entries);
-    S_vec.reserve(entries);
-
-    std::vector<double> W_vec;    
     Flux.reserve(Evols);
-    W_vec.reserve(entries);
-
-
 
 
     std::array<std::vector<std::vector<double>>,3> Magnetization;
     for (auto& i : Magnetization){
         i.reserve(Evols);
     }
-    std::array<std::vector<double>,3> Mag_vec;
-    for (auto& i : Mag_vec){
-        i.reserve(entries);
-    }
-
-
-
     std::array<std::vector<std::vector<double>>,3> Magnetization2;
     for (auto& i : Magnetization2){
         i.reserve(Evols);
     }
-    std::array<std::vector<double>,3> Mag_vec2;
-    for (auto& i : Mag_vec2){
-        i.reserve(entries);
-    }
-
-
-    std::array<std::vector<std::vector<double>>,3> Suscecptibility;
-    for (auto& i : Suscecptibility){
+    std::array<std::vector<std::vector<double>>,3> Susceptibility;
+    for (auto& i : Susceptibility){
         i.reserve(Evols);
     }
 
@@ -663,117 +790,18 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
     auto t0 = std::chrono::system_clock::now();
     int max_bond = 0;
     
+    std::vector<std::future<void>> ThreadVector;
+    ThreadVector.reserve(Evols);
     std::cout << "\n\n";
     for (int i = 0; i != Evols; i++){
-        double curr_beta = 0;
-        auto t1 = std::chrono::system_clock::now();
-        auto psi = itensor::randomMPS(sites,init_rand_sites);
-        MPS psix = psi;
-        MPS psiy = psi;
-        MPS psiz = psi;
-
-        std::complex<double> E = itensor::innerC(psi,H0,psi) / itensor::inner(psi,psi);
-        E_vec.push_back(std::real(E));
-        W_vec.push_back(0);
-        C_vec.push_back(0);
-        S_vec.push_back(0);
-        for (auto& i : Mag_vec){
-            i.push_back(0);
-        }
-        for (auto& i : Mag_vec2){
-            i.push_back(0);
-        }
-        //double n = 1;
-
-        for (int j = 0; j != timesteps.size(); j++){
-            int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Mag_vec,Mag_vec2,H0,psi,T[j],timesteps[j],tdvp_args,Sweeps,curr_beta);
-            max_bond = std::max(max_bond,curbond);
-        }
-        S_vec = S_vec.back() - S_vec;
-
-        Energies.push_back(E_vec);
-        E_vec.clear();
-        Capacity.push_back(C_vec);
-        C_vec.clear();
-        Entropy.push_back(S_vec);
-        S_vec.clear();
-        Flux.push_back(W_vec);
-        W_vec.clear();
-
-        
-        if (SusceptIntegral){
-            std::array<std::vector<double>,3> Mag_vec_nextx;
-            for (auto& i : Mag_vec_nextx){
-                i.reserve(entries);
-            }
-            std::array<std::vector<double>,3> Mag_vec_nexty;
-            for (auto& i : Mag_vec_nexty){
-                i.reserve(entries);
-            }
-            std::array<std::vector<double>,3> Mag_vec_nextz;
-            for (auto& i : Mag_vec_nextz){
-                i.reserve(entries);
-            }
-            std::array<std::vector<double>,3> Mag_vec_next2;
-            for (auto& i : Mag_vec_next2){
-                i.reserve(entries);
-            }
-
-            for (auto& i : Mag_vec_nextx){
-                i.push_back(0);
-            }
-            for (auto& i : Mag_vec_nextz){
-                i.push_back(0);
-            }
-            for (auto& i : Mag_vec_nexty){
-                i.push_back(0);
-            }
-            for (auto& i : Mag_vec_next2){
-                i.push_back(0);
-            }
-
-            for (int j = 0; j != timesteps.size(); j++){
-                if (Calsusx){
-                    tdvp_loop(Mag_vec_nextx,Mag_vec_next2,H0x,psix,T[j],timesteps[j],tdvp_args,Sweeps);
-                }
-                if (Calsusy){
-                    tdvp_loop(Mag_vec_nexty,Mag_vec_next2,H0y,psiz,T[j],timesteps[j],tdvp_args,Sweeps);
-                }
-                if (Calsusz){
-                    tdvp_loop(Mag_vec_nextz,Mag_vec_next2,H0z,psiy,T[j],timesteps[j],tdvp_args,Sweeps);
-                }
-            }
-
-            if (Calsusx){
-                std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
-                Suscecptibility[0].push_back(chix/SusceptDiff);
-            }
-            if (Calsusy){
-                std::vector<double> chiy = Mag_vec_nexty[1] - Mag_vec[1];
-                Suscecptibility[1].push_back(chiy/SusceptDiff);
-            }
-            if (Calsusz){
-                std::vector<double> chiz = Mag_vec_nextz[2] - Mag_vec[2];
-                Suscecptibility[2].push_back(chiz/SusceptDiff);
-            }
-        }
-
-        for (int j = 0; j != 3; j++){
-            Magnetization[j].push_back(Mag_vec[j]);
-            Mag_vec[j].clear();
-            Magnetization2[j].push_back(Mag_vec2[j]);
-            Mag_vec2[j].clear();
-        }
-
-        
-
-        auto t2 = std::chrono::system_clock::now();
-        auto time = std::chrono::duration<double>(t2-t1);
-        std::cout << "Finished Evolution Number " << (i+1) << "/" << Evols << ", Time Needed: " << time.count() << " Seconds\n" << std::flush;
-
-
+        ThreadVector.push_back(std::async(std::launch::async,[&](){time_evolution(std::ref(Energies),std::ref(Capacity),std::ref(Entropy),std::ref(Flux),
+            std::ref(Magnetization),std::ref(Magnetization2),std::ref(Susceptibility),
+            T,timesteps,entries,SusceptDiff,init_rand_sites,std::ref(max_bond),tdvp_args,Sweeps);}));
     }
 
+    for (auto& i : ThreadVector){
+        i.wait();
+    }
 
 
     E = Mean(Energies);
@@ -791,13 +819,13 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
 
     if (SusceptIntegral){
         if (Calsusx){
-            Chix = Mean(Suscecptibility[0]);
+            Chix = Mean(Susceptibility[0]);
         }
         if (Calsusy){
-            Chiy = Mean(Suscecptibility[1]);
+            Chiy = Mean(Susceptibility[1]);
         }
         if (Calsusz){
-            Chiz = Mean(Suscecptibility[2]);
+            Chiz = Mean(Susceptibility[2]);
         }
     }
 

@@ -2,7 +2,6 @@
 #include <array>
 #include <vector>
 #include <chrono>
-#include "itensor/all.h"
 #include <ios>
 #include <type_traits>
 #include <cmath>
@@ -10,14 +9,18 @@
 #include <string>
 #include <algorithm>
 #include <cstdlib>
-#include "TDVP/tdvp.h"
 #include <fstream>
-#include "Hamiltonian.h"
 #include <exception>
 #include <filesystem>
 #include <climits>
-#include "customspin_nitsch.h"
+#include <cstdlib>
+#include <future>
+#include <mutex>
+#include "itensor/all.h"
+#include "TDVP/tdvp.h"
 #include "TDVP/basisextension.h"
+#include "customspin_nitsch.h"
+#include "Hamiltonian.h"
 #pragma once
 
 
@@ -135,12 +138,18 @@ class Kitaev_Model{
     
     int tdvp_loop(std::vector<double>& E_vec, std::vector<double>& C_vec, std::vector<double>& S_vec, std::vector<double>& W_vec,
     std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
-    MPO& H0, MPS& psi, Cplx& t, int TimeSteps, Args& args, Sweeps& sweeps, double& cb);
+    MPO& H0, MPS& psi, Cplx& t, int TimeSteps, Args& args, itensor::Sweeps& sweeps, double& cb);
+
+    void time_evolution(std::vector<std::vector<double>>& Energies, std::vector<std::vector<double>>& Capacity,
+    std::vector<std::vector<double>>& Entropy, std::vector<std::vector<double>>& Flux,
+    std::array<std::vector<std::vector<double>>,3>& Magnetization, std::array<std::vector<std::vector<double>>,3>& Magnetization2,
+    std::array<std::vector<std::vector<double>>,3>& Susceptibility,
+    std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff, int init_rand_sites, int& max_bond, Args& args, itensor::Sweeps& sweeps);
         
     void tdvp_loop(std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
-    MPO& H0, MPS& psi, Cplx& t, int TimeSteps, Args& args, Sweeps& sweeps);
+    MPO& H0, MPS& psi, Cplx& t, int TimeSteps, Args& args, itensor::Sweeps& sweeps);
 
-    void chi_int(MPS& psi, double n, double t, std::array<std::vector<double>,3>& chi_vec, double step, Sweeps& sweeps, Args& args);
+    void chi_int(MPS& psi, double n, double t, std::array<std::vector<double>,3>& chi_vec, double step, itensor::Sweeps& sweeps, Args& args);
 
     template<std::size_t n, typename T>
     void save_data(std::string filename, std::vector<std::array<T,n>>& vec);
@@ -184,6 +193,7 @@ class Kitaev_Model{
         this -> LY = LY;
         this -> aux = aux;
         this -> sec_aux = sec_aux;
+        
 
         std::vector<int> full_points;
         if (shape == "Honeycomb" || shape == "HoneycombPeriodic" || shape == "HoneycombReverse" || shape == "HoneycombReverse2"){

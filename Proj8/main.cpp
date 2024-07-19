@@ -43,6 +43,9 @@ int main(){
     H_Details.set("hz",0.1);
     //H_Details.set("J",1);
 
+    char env[] = "MKL_NUM_THREADS=1";
+    putenv(env);
+
     int LX = 2;
     int LY = 2;
     int auxiliaries = 1;
@@ -53,8 +56,8 @@ int main(){
     int spin = 1;
     std::string filename = "aaaaaaaaaa";
 
-    std::vector<int> timesteps= {5,10};
-    int Evols = 1;
+    std::vector<int> timesteps= {50,100};
+    int Evols = 2;
     std::vector<double> intervals = {1,9};
     int init_states = 32;
     int max_states = 128;
@@ -70,11 +73,8 @@ int main(){
 
 
     auto Model = TDVP_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,sec_auxiliaries,"Triangular");
-    println(Model.H0);
-    PrintData(Model.M[0]);
-    PrintData(Model.M[1]);
     //Model.TPQ_MPS(timesteps,intervals,Evols,256,32,"TwoSite",0.005,"z");
-    Model.tanTRG(timesteps,intervals);
+    Model.TPQ_MPS(timesteps,intervals,Evols);
     Model.Save("benis3");
     //auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
@@ -112,112 +112,10 @@ int main(){
     auto Hexphalf = itensor::toExpH(Model.ampo,0.1);
     auto Hexphalfinv = itensor::toExpH(Model.ampo,-0.1);
 
-    auto Hexphalf_tan = Model.mpo_to_tanmpo(Hexphalf);
-    auto Hexphalfinv_tan = Model.mpo_to_tanmpo(Hexphalfinv);
     //itensor::println(Hexp);
     //itensor::println(Model.H0);
 
-    auto H0tan = Model.mpo_to_tanmpo(Model.H0);
-    auto Hmpstan = Model.mpo_to_tanmps(Hexphalf);
-    auto Hmpstaninv = Model.mpo_to_tanmps(Hexphalfinv);
-
-    MPO Hcalc3 = nmultMPO(Hexphalfinv,prime(Sz));
-    Hcalc3 = nmultMPO(Hcalc3,prime(Hexphalf));
-    Hcalc3 = nmultMPO(Hcalc3,prime(Hexphalf));
-    Hcalc3 = nmultMPO(Hcalc3,prime(Sz));
-    Hcalc3 = nmultMPO(Hcalc3,prime(Hexphalfinv));
-
-    MPO Hcalc3inv = nmultMPO(Hexphalf,prime(Sz));
-    Hcalc3inv = nmultMPO(Hcalc3inv,prime(Hexphalfinv));
-    Hcalc3inv = nmultMPO(Hcalc3inv,prime(Hexphalfinv));
-    Hcalc3inv = nmultMPO(Hcalc3inv,prime(Sz));
-    Hcalc3inv = nmultMPO(Hcalc3inv,prime(Hexphalf));
-
-    MPS Hcalc3mps = applyMPO(H0tan,Hmpstaninv);
-    Hcalc3mps = applyMPO(Hexphalf_tan,Hcalc3mps);
-    Hcalc3mps = applyMPO(Hexphalf_tan,Hcalc3mps);
-    Hcalc3mps = applyMPO(H0tan,Hcalc3mps);
-    Hcalc3mps = applyMPO(Hexphalfinv_tan,Hcalc3mps);
-    MPO Hcalc32 = Model.tanmps_to_mpo(Hcalc3mps);
-
-    MPO Hcalc4 = nmultMPO(Model.H0,prime(Hexphalf));
-    Hcalc4 = nmultMPO(Hcalc4,prime(Hexphalf));
-    Hcalc4 = nmultMPO(Hcalc4,prime(Model.H0));
-
-    MPO Hcalc5 = itensor::nmultMPO(Hexphalf_tan,prime(H0tan));
-    Hcalc5 = nmultMPO(Hcalc5,prime(Hexphalf_tan));
-
-    MPO Hcalc6 = nmultMPO(H0tan,prime(Hexphalf_tan));
-    Hcalc6 = nmultMPO(Hcalc6,prime(Hexphalf_tan));
-    Hcalc6 = nmultMPO(Hcalc6,prime(H0tan));
-
-    Hmpstan.orthogonalize();
-    //Hmpstan.normalize();
-    Hmpstaninv.orthogonalize();
-    Hmpstaninv.normalize();
-    //itensor::println(Hcalc);
-
-
-    MPO Hcalc4t = nmultMPO(Model.H0,prime(Hexphalf));
-    //Hcalc4t.noPrime();
-    MPO Hcalc4td = Hcalc4t;
-
-
-    MPO Hcalc4tan = Model.mpo_to_tanmpo(Hcalc4t);
-
-
-
-
-    double E1 = 0.;
-    double E2 = 0.;
-    double Ec1 = 0.;
-    double Ec2 = 0.;
-    double Enorm = 0.;
-
-    for (int i = 0; i != 1000; i++){
-        auto rmps = itensor::randomMPS(Model.sites,512);  
-        //auto rmps2 = itensor::randomMPS(Model.sitestan,128);
-        std::complex<double> normsq = innerC(rmps,Hexphalfinv,Hexphalfinv,rmps) * innerC(rmps,Hexphalf,Hexphalf,rmps);      
-
-        auto delE = itensor::innerC(rmps,Hcalc3,rmps) / std::real(normsq);
-        auto delE2 = itensor::innerC(rmps,Hcalc3inv,rmps) / std::real(normsq);
-        E1 += std::real(delE);
-        E2 += std::real(delE) * std::real(delE);
-        Ec1 += std::real(delE2);
-        Ec2 += std::real(delE2) * std::real(delE2);
-        Enorm += std::real(normsq);
-
-        std::cout << i << " - " << delE << " - " << delE2 << ", " << normsq << "\n" << std::flush;
-    }
-    E1 /= 1000.;
-    E2 /= 1000.;
-    Ec1 /= 1000.;
-    Ec2 /= 1000.;
-    Enorm /= 1000.;
-
-    
-    std::cout << E1 << "--" << std::sqrt(E2-E1*E1) / std::sqrt(1000.) << " -- " << Enorm << "\n";
-    std::cout << Ec1 << "--" << std::sqrt(Ec2-Ec1*Ec1) / std::sqrt(1000.) << " -- " << Enorm << "\n";
-    std::complex<double> normsqtan = itensor::innerC(Hmpstan,Hmpstan);
-    
-    /*
-    double rnorm = 0;
-    for (int i = 0; i != 50; i++){
-        auto rmps = itensor::randomMPS(Model.sites,128);
-        std::complex<double> normrand = itensor::innerC(rmps,Hexphalf,Hexphalf,rmps);
-        std::cout << "RandNorm, " << i << ": " << normrand << "\n" << std::flush;
-        rnorm += std::real(normrand);
-    }
-    rnorm /= 50.;
-    std::cout << "Norm: " << rnorm << "\n" << std::flush;
-    */
-    
-
-    auto tanmps = itensor::applyMPO(H0tan,Hmpstaninv);
-    //tanmps = itensor::applyMPO(Hmpotan,tanmps);
-    
-
-    std::cout << itensor::innerC(Hmpstaninv,Hcalc4tan,Hmpstaninv) << " " << std::real(normsqtan) << "\n" << std::flush;
+  
     
     //itensor::println(Hexphalf);
     //itensor::println(Hexphalfinv);

@@ -4,9 +4,9 @@ import os
 
 
     
-intervals = np.array([3,5,12,15,25,25,25])
+intervals = np.array([3,5,12,25,25,25,50.5,50.5,75,75,75,75,100,100,100,100,100,100,100,100,100,100])
 particles = 8
-filename = "SusTest/Sus5/"
+filename = "Anisotropic/AnisS1_9/"
 filename2 = "Classic"
 K = 1.
     
