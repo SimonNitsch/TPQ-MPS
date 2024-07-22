@@ -146,7 +146,7 @@ class Kitaev_Model{
     std::array<std::vector<std::vector<double>>,3>& Susceptibility,
     std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff, int init_rand_sites, int& max_bond, Args& args, itensor::Sweeps& sweeps);
         
-    void tdvp_loop(std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
+    void tdvp_loop(std::array<std::vector<double>,3>& M_vec,
     MPO& H0, MPS& psi, Cplx& t, int TimeSteps, Args& args, itensor::Sweeps& sweeps);
 
     void chi_int(MPS& psi, double n, double t, std::array<std::vector<double>,3>& chi_vec, double step, itensor::Sweeps& sweeps, Args& args);

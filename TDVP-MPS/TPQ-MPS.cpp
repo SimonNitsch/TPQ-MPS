@@ -416,7 +416,7 @@ itensor::MPO& H0, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::A
 }
 
 
-void Kitaev_Model::tdvp_loop(std::array<std::vector<double>,3>& M_vec, std::array<std::vector<double>,3>& M_vec2,
+void Kitaev_Model::tdvp_loop(std::array<std::vector<double>,3>& M_vec,
 itensor::MPO& H0, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::Args& args, itensor::Sweeps& sweeps){
     std::complex<double> tcompl2 = t;
     double t_beta = std::real(tcompl2) * -2;
@@ -427,8 +427,6 @@ itensor::MPO& H0, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::A
         for (int indi = 0; indi != 3; indi++){
             std::complex<double> m = itensor::innerC(psi,M[indi],psi);
             M_vec[indi].push_back(std::real(m));
-            std::complex<double> m2 = itensor::innerC(psi,M2[indi],psi);
-            M_vec2[indi].push_back(std::real(m2));
         }
     }
 }
@@ -529,6 +527,10 @@ std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff
         i.reserve(entries);
     }
 
+    std::array<std::vector<double>,3> Mag_vec_nextx;
+    std::array<std::vector<double>,3> Mag_vec_nexty;
+    std::array<std::vector<double>,3> Mag_vec_nextz;
+
 
     double curr_beta = 0;
     auto t1 = std::chrono::system_clock::now();
@@ -549,6 +551,40 @@ std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff
         i.push_back(0);
     }
         //double n = 1;
+
+    if (SusceptIntegral){
+        for (auto& i : Mag_vec_nextx){
+            i.reserve(entries);
+        }
+        for (auto& i : Mag_vec_nexty){
+            i.reserve(entries);
+        }
+        for (auto& i : Mag_vec_nextz){
+            i.reserve(entries);
+        }
+
+        for (auto& i : Mag_vec_nextx){
+            i.push_back(0);
+        }
+        for (auto& i : Mag_vec_nextz){
+            i.push_back(0);
+        }
+        for (auto& i : Mag_vec_nexty){
+            i.push_back(0);
+        }
+
+        for (int j = 0; j != timesteps.size(); j++){
+            if (Calsusx){
+                auto fut = std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nextx,H0x,psix,T[j],timesteps[j],args,sweeps);});
+            }
+            if (Calsusy){
+                auto fut = std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nexty,H0y,psiz,T[j],timesteps[j],args,sweeps);});
+            }
+            if (Calsusz){
+                auto fut = std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nextz,H0z,psiy,T[j],timesteps[j],args,sweeps);});
+            }
+        }
+    }
 
     for (int j = 0; j != timesteps.size(); j++){
         int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Mag_vec,Mag_vec2,H0,psi,T[j],timesteps[j],args,sweeps,curr_beta);
@@ -573,64 +609,20 @@ std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff
         }
     }
 
-        
+
     if (SusceptIntegral){
-        std::array<std::vector<double>,3> Mag_vec_nextx;
-        for (auto& i : Mag_vec_nextx){
-            i.reserve(entries);
+        std::lock_guard<std::mutex> lock2(suscept_mutex);
+        if (Calsusx){
+            std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
+            Susceptibility[0].push_back(chix/SusceptDiff);
         }
-        std::array<std::vector<double>,3> Mag_vec_nexty;
-        for (auto& i : Mag_vec_nexty){
-            i.reserve(entries);
+        if (Calsusy){
+            std::vector<double> chiy = Mag_vec_nexty[1] - Mag_vec[1];
+            Susceptibility[1].push_back(chiy/SusceptDiff);
         }
-        std::array<std::vector<double>,3> Mag_vec_nextz;
-        for (auto& i : Mag_vec_nextz){
-            i.reserve(entries);
-        }
-        std::array<std::vector<double>,3> Mag_vec_next2;
-        for (auto& i : Mag_vec_next2){
-            i.reserve(entries);
-        }
-
-        for (auto& i : Mag_vec_nextx){
-            i.push_back(0);
-        }
-        for (auto& i : Mag_vec_nextz){
-            i.push_back(0);
-        }
-        for (auto& i : Mag_vec_nexty){
-            i.push_back(0);
-        }
-        for (auto& i : Mag_vec_next2){
-            i.push_back(0);
-        }
-
-        for (int j = 0; j != timesteps.size(); j++){
-            if (Calsusx){
-                tdvp_loop(Mag_vec_nextx,Mag_vec_next2,H0x,psix,T[j],timesteps[j],args,sweeps);
-            }
-            if (Calsusy){
-                tdvp_loop(Mag_vec_nexty,Mag_vec_next2,H0y,psiz,T[j],timesteps[j],args,sweeps);
-            }
-            if (Calsusz){
-                tdvp_loop(Mag_vec_nextz,Mag_vec_next2,H0z,psiy,T[j],timesteps[j],args,sweeps);
-            }
-        }
-
-        {
-            std::lock_guard<std::mutex> lock2(suscept_mutex);
-            if (Calsusx){
-                std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
-                Susceptibility[0].push_back(chix/SusceptDiff);
-            }
-            if (Calsusy){
-                std::vector<double> chiy = Mag_vec_nexty[1] - Mag_vec[1];
-                Susceptibility[1].push_back(chiy/SusceptDiff);
-            }
-            if (Calsusz){
-                std::vector<double> chiz = Mag_vec_nextz[2] - Mag_vec[2];
-                Susceptibility[2].push_back(chiz/SusceptDiff);
-            }
+        if (Calsusz){
+            std::vector<double> chiz = Mag_vec_nextz[2] - Mag_vec[2];
+            Susceptibility[2].push_back(chiz/SusceptDiff);
         }
     }
 
