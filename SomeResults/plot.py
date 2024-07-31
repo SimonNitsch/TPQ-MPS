@@ -4,9 +4,9 @@ import os
 
 
     
-intervals = np.array([3,5,12,25,25,25,50.5,50.5,75,75,75,75,100,100,100,100,100,100,100,100,100,100])
+intervals = np.array([3,5,12,15,25,25,25])#,50.5,50.5,75,75,75,75,100,100,100,100,100,100,100,100,100,100])
 particles = 8
-filename = "Anisotropic/AnisS1_9/"
+filename = "SusTest/Sus_hz01/"
 filename2 = "Classic"
 K = 1.
     
@@ -221,6 +221,19 @@ for i in range(ymax):
         if j==xmax-1 and i%2==1:
             plt.plot([xh,xh+0.5*np.cos(np.pi/6)],[yh,yh-0.5*np.sin(np.pi/6)],"b:")
 
+        if i==0 and j==1:
+            xhsec1 = xh
+            yhsec1 = yh
+        if i==0 and j==xmax-1:
+            xhsec2 = xh
+            yhsec2 = yh     
+
+        if i==ymax-1 and j==0:
+            plt.plot([xh,xhsec1],[yh,yhsec1],"k:")   
+        if i==ymax-1 and j==xmax-2:
+            plt.plot([xh,xhsec2],[yh,yhsec2],"k:")   
+
+
 for i in range(ymax):
     for j in range(xmax):
         xh = j * 2 * np.cos(np.pi/6) + np.ceil(i/2) * np.cos(np.pi/6)
@@ -233,10 +246,27 @@ plt.show()
 
 
 
+ymax = 4
+xmax = 4 
 plt.figure(figsize=[10,10])
 
-ymax = 6
-xmax = 4
+for i in range(ymax):
+    for j in range(xmax):
+
+        xh = j + i * np.cos(np.pi/3)
+        yh = i * np.sin(np.pi/3)
+
+        if j != xmax-1:
+            plt.plot([xh,xh+1],[yh,yh],"r")
+        if i != ymax-1:
+            plt.plot([xh,xh+np.cos(np.pi/3)],[yh,yh+np.sin(np.pi/3)],"g")
+        if i != 0 and j != xmax-1:
+            plt.plot([xh,xh+np.cos(np.pi/3)],[yh,yh-np.sin(np.pi/3)],"b")
+
+        plt.plot(xh,yh,"k.")
+
+plt.axis("equal")
+plt.show()
 
 
 

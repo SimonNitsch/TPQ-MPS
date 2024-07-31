@@ -70,7 +70,7 @@ class Kitaev_Model{
     bool CalcTDVP = false;
 
     public:
-    MPO H0, H0x, H0y, H0z;
+    MPO H0, H2, H0x, H0y, H0z;
     std::array<MPO,3> M;
     std::array<MPO,3> M2;
     Hamiltonian H_Details;
@@ -107,22 +107,30 @@ class Kitaev_Model{
     std::array<int,3> get_neighbour_data_hex_rev(int pos);
     std::array<int,3> get_neighbour_data_hex_rev2(int pos);
     std::array<int,3> get_neighbour_data_tri(int pos);
+    std::array<int,3> get_neighbour_data_tri_periodic(int pos);
+
+    std::array<int,3>(*neighfuncs[6])(int);
 
     std::array<int,3> get_neighbour_data(int pos){
         std::array<int,3> n;
-        if (Lattice_Type == 1){
-            n = get_neighbour_data_hex(pos);
-        } else if (Lattice_Type == 2){
-            n = get_neighbour_data_tri(pos);
-        } else if (Lattice_Type == 3){
-            n = get_neighbour_data_hex_periodic(pos);
-        } else if (Lattice_Type == 4){
-            n = get_neighbour_data_hex_rev(pos);
-        } else if (Lattice_Type == 5){
-            n = get_neighbour_data_hex_rev2(pos);
+
+        switch(Lattice_Type){
+            case 1:
+                n = get_neighbour_data_hex(pos);
+            case 2:
+                n = get_neighbour_data_tri(pos);
+            case 3:
+                n = get_neighbour_data_hex_periodic(pos);
+            case 4:
+                n = get_neighbour_data_hex_rev(pos);
+            case 5:
+                n = get_neighbour_data_hex_rev2(pos);
+            case 6: 
+                n = get_neighbour_data_tri_periodic(pos);
         }
         return n;
     }
+
 
     void add_kitaev_interaction(std::vector<int>& p_vec, int aux, int sec_aux);
     void add_magnetic_interaction(int aux, int sec_aux);
@@ -193,7 +201,6 @@ class Kitaev_Model{
         this -> LY = LY;
         this -> aux = aux;
         this -> sec_aux = sec_aux;
-        
 
         std::vector<int> full_points;
         if (shape == "Honeycomb" || shape == "HoneycombPeriodic" || shape == "HoneycombReverse" || shape == "HoneycombReverse2"){
@@ -215,8 +222,13 @@ class Kitaev_Model{
                     full_points.push_back(n+LY*m);
                 }   
             }
-        } else if (shape == "Triangular"){
-            Lattice_Type = 2;
+        } else if (shape == "Triangular" || shape == "TriangularPeriodic"){
+            if (shape == "Triangular"){
+                Lattice_Type = 2;
+            } else if (shape == "TriangularPeriodic"){
+                Lattice_Type = 6;
+            }
+            
             full_points.reserve(LX*LY);
             for (int i = 1; i != LX*LY+1; i++){
                 full_points.push_back(i);

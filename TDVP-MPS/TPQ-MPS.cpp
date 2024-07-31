@@ -102,10 +102,30 @@ std::array<int,3> Kitaev_Model::get_neighbour_data_hex_rev2(int pos){
 }
 
 
-
-
-
 std::array<int,3> Kitaev_Model::get_neighbour_data_tri(int pos){
+    int X = (pos-1) / LY;
+    int Y = (pos-1) % LY;
+    std::array<int,3> neighbours{};
+
+    if (X != (LX-1)){
+        neighbours[0] = pos + LY;
+
+        if (Y != 0){
+            neighbours[2] = pos + LY - 1;
+        }
+    }
+
+    if (Y != LY-1 || X != LX-1){
+        neighbours[1] = pos + 1;
+    }
+
+    return neighbours;
+}
+
+
+
+
+std::array<int,3> Kitaev_Model::get_neighbour_data_tri_periodic(int pos){
     int X = (pos-1) / LY;
     int Y = (pos-1) % LY;
     std::array<int,3> neighbours{};
@@ -273,7 +293,7 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator_half(int aux, int sec_aux){
     int Py = std::max((LY/2)-1,0);
     int Px = LX-1;
     auto fluxop = itensor::AutoMPO(sites);
-    double Wfac = -64. / static_cast<double>(Px) / static_cast<double>(Py);
+    double Wfac = 64. / static_cast<double>(Px) / static_cast<double>(Py);
 
     for (int i = 0; i != Px; i++){
         for (int j = 0; j != Py; j++){
@@ -300,7 +320,7 @@ itensor::MPO Kitaev_Model::honeycomb_flux_operator(int aux, int sec_aux){
     int Py = std::max((LY/2)-1,0);
     int Px = LX-1;
     auto fluxop = itensor::AutoMPO(sites);
-    double Wfac = 1. / static_cast<double>(Px) / static_cast<double>(Py);
+    double Wfac = -1. / static_cast<double>(Px) / static_cast<double>(Py);
 
     for (int i = 0; i != Px; i++){
         for (int j = 0; j != Py; j++){
@@ -394,10 +414,11 @@ itensor::MPO& H0, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::A
         }
         cb += t_beta;
         double E = itensor::tdvp(psi,H0,t,sweeps,args);
+        double E2 = std::real(itensor::innerC(psi,H0,H0,psi));
         max_bond = std::max(max_bond,itensor::maxLinkDim(psi));
 
         std::complex<double> w = itensor::innerC(psi,H_flux,psi);
-        double c = cb * cb * (E_vec.back() - E) / t_beta;
+        double c = cb * cb * (E2 - E*E);
         double s = S_vec.back() + t_beta * 0.5 * (c/cb + C_vec.back()/cb_old);
 
         E_vec.push_back(E);
@@ -552,7 +573,10 @@ std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff
     }
         //double n = 1;
 
+    std::vector<std::future<void>> SusFut;
+
     if (SusceptIntegral){
+        SusFut.reserve(3);
         for (auto& i : Mag_vec_nextx){
             i.reserve(entries);
         }
@@ -572,16 +596,17 @@ std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff
         for (auto& i : Mag_vec_nexty){
             i.push_back(0);
         }
+
 
         for (int j = 0; j != timesteps.size(); j++){
             if (Calsusx){
-                auto fut = std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nextx,H0x,psix,T[j],timesteps[j],args,sweeps);});
+                SusFut.push_back(std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nextx,H0x,psix,T[j],timesteps[j],args,sweeps);}));
             }
             if (Calsusy){
-                auto fut = std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nexty,H0y,psiz,T[j],timesteps[j],args,sweeps);});
+                SusFut.push_back(std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nexty,H0y,psiz,T[j],timesteps[j],args,sweeps);}));
             }
             if (Calsusz){
-                auto fut = std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nextz,H0z,psiy,T[j],timesteps[j],args,sweeps);});
+                SusFut.push_back(std::async(std::launch::async,[&](){tdvp_loop(Mag_vec_nextz,H0z,psiy,T[j],timesteps[j],args,sweeps);}));
             }
         }
     }
@@ -611,6 +636,10 @@ std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff
 
 
     if (SusceptIntegral){
+        for (auto& sf : SusFut){
+            sf.wait();
+        }
+
         std::lock_guard<std::mutex> lock2(suscept_mutex);
         if (Calsusx){
             std::vector<double> chix = Mag_vec_nextx[0] - Mag_vec[0];
@@ -785,11 +814,15 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
     std::vector<std::future<void>> ThreadVector;
     ThreadVector.reserve(Evols);
     std::cout << "\n\n";
-    for (int i = 0; i != Evols; i++){
+    for (int i = 0; i != Evols-1; i++){
         ThreadVector.push_back(std::async(std::launch::async,[&](){time_evolution(std::ref(Energies),std::ref(Capacity),std::ref(Entropy),std::ref(Flux),
             std::ref(Magnetization),std::ref(Magnetization2),std::ref(Susceptibility),
             T,timesteps,entries,SusceptDiff,init_rand_sites,std::ref(max_bond),tdvp_args,Sweeps);}));
     }
+
+    time_evolution(Energies,Capacity,Entropy,Flux,Magnetization,Magnetization2,Susceptibility,
+                    T,timesteps,entries,SusceptDiff,init_rand_sites,max_bond,tdvp_args,Sweeps);
+
 
     for (auto& i : ThreadVector){
         i.wait();

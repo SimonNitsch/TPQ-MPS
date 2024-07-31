@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "MacOS Clang++",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers",
+                "/Users/simon/Documents/itensor",
+                "/Users/simon/Documents/TPQ-MPS",
+                "/Users/simon/Documents/eigen-3.4.0"
+            ],
+            "defines": [],
+            "compilerArgs": [
+                "-std=c++17",
+                "-stdlib=libc++",
+                "-I/usr/local/include"
+            ],
+            "compilerPath": "/usr/bin/clang++",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}

@@ -37,10 +37,10 @@ int main(){
 int main(){
     std::ios_base::sync_with_stdio(false);
     TDVP_MPS::Hamiltonian H_Details;
-    H_Details.set("K",1.);
+    H_Details.set("K",1);
     TPQ_MPS_old::Hamiltonian H_Details_old;
     H_Details_old.set("K",4./3.);
-    H_Details.set("hz",0.1);
+    //H_Details.set("hz",0.1);
     //H_Details.set("J",1);
 
     char env[] = "MKL_NUM_THREADS=1";
@@ -57,7 +57,7 @@ int main(){
     std::string filename = "aaaaaaaaaa";
 
     std::vector<int> timesteps= {50,100};
-    int Evols = 1;
+    int Evols = 10;
     std::vector<double> intervals = {1,9};
     int init_states = 32;
     int max_states = 128;
@@ -74,7 +74,7 @@ int main(){
 
     auto Model = TDVP_MPS::Kitaev_Model(LX,LY,H_Details,spin,auxiliaries,sec_auxiliaries,"Triangular");
     //Model.TPQ_MPS(timesteps,intervals,Evols,256,32,"TwoSite",0.005,"z");
-    Model.TPQ_MPS(timesteps,intervals,Evols,512,64,"TwoSite",0.005);
+    Model.TPQ_MPS(timesteps,intervals,Evols,512,64,"TwoSite",0);
     Model.Save("benis3");
     //auto Model2 = TPQ_MPS_old::Kitaev_Model(LX,LY,H_Details_old,sites_old,auxiliaries,"Honeycomb");
     //itensor::PrintData(Model.H2);
