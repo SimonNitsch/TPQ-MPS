@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 import os
 
 
-particles = 24
-filename = "Issp/6x4Evol/"
+particles = 16
+filename = "Issp/4x4S1-01m/"
 filename2 = "Classic"
 K = 1.
     

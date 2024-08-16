@@ -414,11 +414,11 @@ itensor::MPO& H0, itensor::MPS& psi, itensor::Cplx& t, int TimeSteps, itensor::A
         }
         cb += t_beta;
         double E = itensor::tdvp(psi,H0,t,sweeps,args);
-        double E2 = std::real(itensor::innerC(psi,H0,H0,psi));
+        //double E2 = std::real(itensor::innerC(psi,H0,H0,psi));
         max_bond = std::max(max_bond,itensor::maxLinkDim(psi));
 
         std::complex<double> w = itensor::innerC(psi,H_flux,psi);
-        double c = cb * cb * (E2 - E*E);
+        double c = cb * cb * (E_vec.back() - E) / t_beta;
         double s = S_vec.back() + t_beta * 0.5 * (c/cb + C_vec.back()/cb_old);
 
         E_vec.push_back(E);
@@ -729,6 +729,10 @@ void Kitaev_Model::TPQ_MPS(std::vector<int> timesteps, std::vector<double> inter
         H_Details.set("hx",hx);
         H_Details.set("hy",hy);
         H_Details.set("hz",hz);
+    }
+
+    if (Evols < 1){
+        std::invalid_argument("Please type in a valid argument for Evols");
     }
 
     Calsusx = Suscepts.find("x") != std::string::npos;
