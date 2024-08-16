@@ -615,7 +615,7 @@ std::vector<Cplx> T, std::vector<int> timesteps, int entries, double SusceptDiff
         int curbond = tdvp_loop(E_vec,C_vec,S_vec,W_vec,Mag_vec,Mag_vec2,H0,psi,T[j],timesteps[j],args,sweeps,curr_beta);
         max_bond = std::max(max_bond,curbond);
     }
-    S_vec = S_vec.back() - S_vec;
+    S_vec = std::log(dims) - S_vec;
 
     {
         std::lock_guard<std::mutex> lock(forloop_mutex);
