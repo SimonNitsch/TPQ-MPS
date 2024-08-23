@@ -4,7 +4,7 @@ import os
 
 
 particles = 16
-filename = "Issp/4x4S1-01m/"
+filename = "Issp/4x4S1s/"
 filename2 = "Classic"
 K = 1.
     
